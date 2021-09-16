@@ -38,6 +38,46 @@ Additionally, program status will be written to stderr.
 {'error': 'missing file:'}
 ```
 
+## Read removal errors
+
+The core of the `gpas-uploader` read preprocessing is done by an external decontamination tool. Currently 4 distinct error modes are identified and propagated back to the electron client:
+
+The read removal status updated when the process is started, fails, or completes:
+
+```
+{'decontamination': {'row': 0, 'status': 'started'}}
+...
+{'decontamination': {'row': 1, 'status': 'failure'}}
+...
+{'decontamination': {'row': 0, 'status': 'complete'}}
+```
+
+### File doesn't exist
+
+```
+{'decontamination': {'row': 0, 'error': 'file missing'}}
+```
+where `row` corresponds to the sample's entry in the samplesheet.
+
+### File is not valid fastq
+
+```
+{'decontamination': {'row': 0, 'error': 'invalid fastq', description: '...'}}
+```
+This error comes with an optional description field containing the stderr output from the read removal process.
+
+### Output directory not writable
+
+```
+{'decontamination': {'row': 0, 'error': 'output unwritable'}}
+```
+For cases where output fails to write (full disk, etc)
+
+### Read removal terminated
+```
+{'decontamination': {'row': 0, 'error': 'process terminated'}}
+```
+
 ## begin submission
 
 `gpas-uploader --json upload submission.json`
