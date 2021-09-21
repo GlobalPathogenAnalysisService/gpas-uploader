@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 """
 gpas-uploaded script
 """
@@ -11,25 +11,27 @@ import validate
 
 parser = argparse.ArgumentParser(description="gpas sequencing data upload tool")
 parser.add_argument("--json", action="store_true", default=False)
+subparsers = parser.add_subparsers(dest="command")
 
-
-validate_args = subargs.add_parser("validate")
+validate_args = subparsers.add_parser(
+    "validate", help="parse and validate a samplesheet"
+)
 validate_args.add_argument("samplesheet")
 validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
 
-prepare_args = subargs.add_parser("prepare")
-prepare_args = subargs.add_parser("samplesheet")
+prepare_args = subparsers.add_parser("prepare", help="Prepare a batch for submission")
+prepare_args.add_argument("samplesheet")
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    if args.validate:
+    if args.command == "validate":
         # validation stage
         validation = validate.Samplesheet(args.samplesheet)
         if args.json:
             print(json.dumps(validation))
 
-    elif args.prepare:
+    elif args.command == "prepare":
         validation = None
         if args.json:
             validation = None
@@ -39,3 +41,6 @@ if __name__ == "__main__":
         for sample in validation:
             cr = Decontaminate(sample["fastq1"], sample["fastq2"])
             cr.result()
+
+    else:
+        exit(1)
