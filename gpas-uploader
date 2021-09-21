@@ -4,16 +4,38 @@ gpas-uploaded script
 """
 
 import argparse
+import json
+from error import GpasError
+import cleanreads
+import validate
 
 parser = argparse.ArgumentParser(description="gpas sequencing data upload tool")
 parser.add_argument("--json", action="store_true", default=False)
 
-submit_args = subargs.add_parser("submit")
-submit_args.add_argument("ticket")
 
-import_args = subargs.add_parser("import")
-import_args.add_argument("samplesheet")
-import_args.add_argument("--dir", default=None)
+validate_args = subargs.add_parser("validate")
+validate_args.add_argument("samplesheet")
+validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
+
+prepare_args = subargs.add_parser("prepare")
+prepare_args = subargs.add_parser("samplesheet")
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    if args.validate:
+        # validation stage
+        validation = validate.Samplesheet(args.samplesheet)
+        if args.json:
+            print(json.dumps(validation))
+
+    elif args.prepare:
+        validation = None
+        if args.json:
+            validation = None
+        else:
+            validation = validate.Samplesheet(args.samplesheet)
+
+        for sample in validation:
+            cr = Decontaminate(sample["fastq1"], sample["fastq2"])
+            cr.result()
