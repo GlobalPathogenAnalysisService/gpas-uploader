@@ -1,4 +1,4 @@
-from subprocess import Popen
+import subprocess
 from error import GpasError
 from pathlib import Path
 
@@ -7,12 +7,14 @@ ref_genome = "MN908947.fasta"
 
 # test riak installation
 if not riak.exists():
-    raise GpasError("{'decontamination': 'read removal binary not found'}")
+    raise GpasError({"decontamination": "read removal binary not found"})
 
-with Popen([riak, "--version"]) as p_test:
-    out = p_test.communicate()
+with subprocess.Popen(
+    [riak, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+) as p_test:
+    p_test.wait()
     if p_test.returncode != 0:
-        raise GpasError("{'decontamination': 'read removal tool error'}")
+        raise GpasError({"decontamination": "read removal tool error"})
 
 
 class Decontamination:
@@ -31,24 +33,25 @@ class Decontamination:
                 raise GpasError()
             # paired run
 
-            self.process = Popen(
+            self.process = subprocess.Popen(
                 [riak, "--ref_fasta", ref_genome, "--reads1", fq1, "--reads2", fq2],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
         else:
             # single end
-            self.process = Popen(
+            self.process = subprocess.Popen(
                 [riak, "--ref_fasta", ref_genome, "--reads1", fq1],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
 
-    # returns process id if process properly starts
+        # returns process id if process properly starts
+        return self.process.pid
 
     def result(self):
         # wait for decontam process to finish
         out, err = self.process.communicate()
         if self.process.returncode != 0:
-            raise GpasError("{'decontamination': return_code}")
+            raise GpasError({"decontamination": return_code})
         return out, err
