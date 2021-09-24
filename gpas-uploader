@@ -5,9 +5,11 @@ gpas-uploaded script
 
 import argparse
 from pathlib import Path
-from error import GpasError, emsg, vmsg, dmsg
-import cleanreads
+from error import *
+import sys
+import json
 import validate
+from cleanreads import Decontamination
 
 parser = argparse.ArgumentParser(description="gpas sequencing data upload tool")
 parser.add_argument("--json", action="store_true", default=False)
@@ -19,8 +21,8 @@ validate_args = subparsers.add_parser(
 validate_args.add_argument("samplesheet")
 validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
 
-prepare_args = subparsers.add_parser("prepare", help="Prepare a batch for submission")
-prepare_args.add_argument("samplesheet")
+import_args = subparsers.add_parser("import", help="Prepare a batch for submission")
+import_args.add_argument("samplesheet")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -32,24 +34,32 @@ if __name__ == "__main__":
         except:
             emsg("missing-file", json=args.json)
             exit(1)
-        validation = validate.Samplesheet(samplesheet)
+        try:
+            validation = validate.Samplesheet(samplesheet).to_json()
+        except GpasError:
+            errors = []
+            verr(errors)
+            exit(1)
 
-        vmsg(validation, json=args.json)
+        print(validation, file=sys.stderr)
+        smsg(validation, json=args.json)
 
-    elif args.command == "prepare":
+    elif args.command == "import":
         validation = None
         if args.json:
-            validation = None
+            validation = json.load(open(args.samplesheet))["submission"]
         else:
             validation = validate.Samplesheet(args.samplesheet)
+            smsg(validation, json=args.json)
 
-        for sample in validation:
-            cr = Decontaminate(sample["fastq1"], sample["fastq2"])
+        for sample in validation["samples"]:
+            cr = Decontamination(sample["fastq1"], sample["fastq2"])
             dmsg(sample, "started", json=args.json)
 
             if cr.result() != 0:
-                dmsg(sample, "error", json=args.json)
+                derr(sample, cr.error(), json=args.json)
             else:
-                dmsg(sample, "complete", json=args.json)
+                dmsg(sample, "completed", json=args.json)
     else:
         exit(1)
+    exit(0)

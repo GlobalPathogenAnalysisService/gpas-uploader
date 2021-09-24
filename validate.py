@@ -8,16 +8,21 @@ from error import GpasError
 
 
 def parse_row(d):
-    print(d)
     result, e = {}, None
     if "Illumina" not in d["instrument_platform"]:
         e.append({"instrument": "bad-instrument"})
+
+    fq_path = Path(d["sample_filename"])
+    if not fq_path.exists():
+        e.append({"sample": 0, "error": "file-missing"})
+        # raise GpasError({"row": index, "error": "file-missing"})
 
     return d, e
 
 
 class Samplesheet:
-    samples = defaultdict(list)
+    samples = []
+    batch = None
     root = None
 
     def __init__(self, fn, fastq_prefix=None):
@@ -30,21 +35,15 @@ class Samplesheet:
                 try:
                     rowdata, rowerror = parse_row(row)
                     if not errors:
-                        self.samples[index].append(rowdata)
+                        self.samples.append(rowdata)
                     else:
                         errors[index] = rowerror
                 except:
                     # propagate parsing errors
                     raise GpasError(errors)
 
-            for index in self.samples:
-                fq_path = Path(self.samples[index]["sample_filename"])
-                missing_files = []
-                if not fq_path.exists():
-                    missing_files.append((index, fq_path))
-
-                if missing_files:
-                    raise GpasError({"row": index, "error": "file-missing"})
+            missing_files = []
+        self.batch = str(fn.name)
 
     def to_json(self):
-        return json.dumps(self.samples)
+        return {"batch": self.batch, "samples": self.samples}

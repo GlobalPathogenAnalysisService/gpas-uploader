@@ -7,7 +7,7 @@ ref_genome = "MN908947.fasta"
 
 # test riak installation
 if not riak.exists():
-    raise GpasError({"decontamination": "read removal binary not found"})
+    raise GpasError({"decontamination": riak})
 
 with subprocess.Popen(
     [riak, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
