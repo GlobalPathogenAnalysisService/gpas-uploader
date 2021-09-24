@@ -1,3 +1,4 @@
+import sys
 import subprocess
 from error import GpasError
 from pathlib import Path
@@ -19,17 +20,21 @@ with subprocess.Popen(
 
 class Decontamination:
     process = None
+    error = []
 
     def __init__(self, fq1, fq2=None, outdir=None):
-        if not outdir:
-            outdir = Tempfile.dir()
+        #        if not outdir:
+        #            outdir = Tempfile.dir()
         # test output dir
+        outdir = "/tmp"
 
-        if not fq1.exists():
+        if not Path(fq1).exists():
+            print("missing", fq1, file=sys.stderr)
             raise GpasError()
 
         if fq2:
-            if not fq2.exists():
+            if not Path(fq2).exists():
+                print("missing", fq2, file=sys.stderr)
                 raise GpasError()
             # paired run
 
@@ -46,12 +51,10 @@ class Decontamination:
                 stderr=subprocess.PIPE,
             )
 
-        # returns process id if process properly starts
-        return self.process.pid
-
     def result(self):
         # wait for decontam process to finish
         out, err = self.process.communicate()
         if self.process.returncode != 0:
-            raise GpasError({"decontamination": return_code})
+            #            raise GpasError({"decontamination": self.process.return_code})
+            pass
         return out, err

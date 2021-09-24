@@ -38,7 +38,7 @@ if __name__ == "__main__":
             validation = validate.Samplesheet(samplesheet).to_json()
         except GpasError:
             errors = []
-            verr(errors)
+            verr(errors, json=args.json)
             exit(1)
 
         print(validation, file=sys.stderr)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
             dmsg(sample, "started", json=args.json)
 
             if cr.result() != 0:
-                derr(sample, cr.error(), json=args.json)
+                derr(sample, cr.error, json=args.json)
             else:
                 dmsg(sample, "completed", json=args.json)
     else:
