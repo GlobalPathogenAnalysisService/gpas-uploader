@@ -48,7 +48,7 @@ if __name__ == "__main__":
             emsg("missing-file", json=args.json)
             exit(1)
         try:
-            validation = validate.Samplesheet(samplesheet).to_json()
+            validation = validate.Samplesheet(samplesheet).samples
         except GpasError:
             errors = []
             verr(errors, json=args.json)
