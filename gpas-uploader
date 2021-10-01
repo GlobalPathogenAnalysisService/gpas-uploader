@@ -7,9 +7,11 @@ import argparse
 from pathlib import Path
 from error import *
 import sys
+from sys import exit
 import json
 import validate
 from cleanreads import Decontamination
+import hashlib
 
 parser = argparse.ArgumentParser(description="gpas sequencing data upload tool")
 parser.add_argument("--json", action="store_true", default=False)
@@ -21,8 +23,19 @@ validate_args = subparsers.add_parser(
 validate_args.add_argument("samplesheet")
 validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
 
-import_args = subparsers.add_parser("import", help="Prepare a batch for submission")
+import_args = subparsers.add_parser("decontaminate")
+import_args.add_argument("--dir", default=None)
+# import_args = subparsers.add_parser("import", help="Prepare a batch for submission")
 import_args.add_argument("samplesheet")
+
+
+def md5sum(fn):
+    digest = hashlib.md5()
+    with open(fn, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -41,25 +54,35 @@ if __name__ == "__main__":
             verr(errors, json=args.json)
             exit(1)
 
-        print(validation, file=sys.stderr)
+        #        print(validation, file=sys.stderr)
         smsg(validation, json=args.json)
 
-    elif args.command == "import":
+    elif args.command == "decontaminate":
         validation = None
-        if args.json:
+        #        if args.json:
+        if False:
             validation = json.load(open(args.samplesheet))["submission"]
         else:
-            validation = validate.Samplesheet(args.samplesheet)
-            smsg(validation, json=args.json)
+            validation = validate.Samplesheet(Path(args.samplesheet))
+        #            smsg(validation, json=args.json)
+        parent = Path(args.samplesheet).resolve().parent
+        for sample in validation.samples:
+            cr = Decontamination(
+                Path(sample["fastq1"]), Path(sample["fastq2"]), root=parent
+            )
+            dmsg(sample["name"], "started", json=args.json)
 
-        for sample in validation["samples"]:
-            cr = Decontamination(sample["fastq1"], sample["fastq2"])
-            dmsg(sample, "started", json=args.json)
-
-            if cr.result() != 0:
-                derr(sample, cr.error, json=args.json)
+            r = cr.result()
+            if r == None:
+                derr(sample["name"], cr.error, json=args.json)
             else:
-                dmsg(sample, "completed", json=args.json)
+                fq1, fq2 = r
+                print(
+                    validate.add_reads(
+                        fq1, md5sum(fq1), fq2, md5sum(fq2), validation.batch
+                    )
+                )
+                dmsg(sample["name"], "completed", json=args.json)
     else:
         exit(1)
     exit(0)
