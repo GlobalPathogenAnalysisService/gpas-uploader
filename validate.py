@@ -3,6 +3,7 @@ import csv
 import json
 import sys
 from pathlib import Path
+import datetime
 from collections import defaultdict
 
 from error import GpasError
@@ -28,13 +29,13 @@ def parse_row(d, wd=None):
 
 class Sample:
     name = None
-    data = None
+    data = {}
     fq1 = None
     fq2 = None
 
     def __init__(self, name, fq1, fq2=None, data=None):
-        if not data:
-            self.data = {}
+        if data:
+            self.data = data
         self.name = name
         self.fq1 = fq1
         self.fq2 = fq2
@@ -108,10 +109,16 @@ class Samplesheet:
         else:
             return {"validation": {"status": "failure", "samples": self.errors}}
 
-    def make_submission(self, samples):
-        good_samples = []
-        for sample in samples:
-            good_samples.add(
-                {"pe_reads": add_reads(fq1, fq1md5, fq2, fq2md5, self.batch)}
-            )
-        return {"submission": batch(self.batchname, good_samples)}
+    def make_submission(self):
+        return {
+            "submission": {
+                "batch": {
+                    "fileName": "%s",
+                    "uploadedBy": "user@example.com",
+                    "organisation": "University of Oxford",
+                    "site": "University of Oxford",
+                    "uploadedOn": datetime.datetime.now().isoformat()[:-3] + "Z",
+                    "samples": [s.to_submission() for s in self.samples],
+                }
+            }
+        }

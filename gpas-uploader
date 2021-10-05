@@ -12,6 +12,7 @@ import json
 import validate
 from cleanreads import Decontamination
 import hashlib
+from error import dmsg
 
 parser = argparse.ArgumentParser(description="gpas sequencing data upload tool")
 parser.add_argument("--json", action="store_true", default=False)
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         try:
             samplesheet = Path(args.samplesheet)
         except:
-            emsg("missing-file", json=args.json)
+            # emsg("missing-file", json=args.json)
             exit(1)
         try:
             validss = validate.Samplesheet(samplesheet)
@@ -53,33 +54,27 @@ if __name__ == "__main__":
             # report exceptions raised during validation
             exit(1)
 
-        print(validss.validate())
+        print(json.dumps(validss.validate()))
 
     elif args.command == "decontaminate":
-        validation = None
-        #        if args.json:
-        if False:
-            validation = json.load(open(args.samplesheet))["submission"]
-        else:
-            validation = validate.Samplesheet(Path(args.samplesheet))
-        parent = Path(args.samplesheet).resolve().parent
-        for sample in validation.samples:
-            cr = Decontamination(
-                Path(sample["fastq1"]), Path(sample["fastq2"]), root=parent
-            )
-            dmsg(sample["name"], "started", json=args.json)
+        if not args.json:
+            raise NotImplementedError
 
+        validation = validate.Samplesheet(Path(args.samplesheet))
+        parent = Path(args.samplesheet).resolve().parent
+
+        for sample in validation.samples:
+            cr = Decontamination(sample.fq1, sample.fq2)
+            dmsg(sample, "started", json=args.json)
             r = cr.result()
             if r == None:
-                derr(sample["name"], cr.error, json=args.json)
+                # derr(sample, cr.error)
+                pass
             else:
                 fq1, fq2 = r
-                print(
-                    validate.add_reads(
-                        fq1, md5sum(fq1), fq2, md5sum(fq2), validation.batch
-                    )
-                )
-                dmsg(sample["name"], "completed", json=args.json)
+                sample.add_pe(fq1, md5sum(fq1), fq2, md5sum(fq2), validation.batch)
+                dmsg(sample, "completed", json=args.json)
+        print(json.dumps(validation.make_submission()))
     else:
         exit(1)
     exit(0)

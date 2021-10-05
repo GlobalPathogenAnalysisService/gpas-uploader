@@ -25,18 +25,12 @@ class Decontamination:
     fq1 = None
     fq2 = None
 
-    def __init__(
-        self, fq1, fq2=None, sample="clean_reads", root=Path("./"), outdir=Path("/tmp")
-    ):
+    def __init__(self, fq1, fq2=None, sample="clean_reads", outdir=Path("/tmp")):
         #        if not outdir:
         #            outdir = Tempfile.dir()
         # test output dir
 
         #        if not isabs(fq1):
-        if True:
-            fq1 = root / fq1
-            #        if not isabs(fq2):
-            fq2 = root / fq2
 
         if not Path(fq1).exists():
             print("missing", fq1, file=sys.stderr)

@@ -19,7 +19,8 @@ def smsg(samples, json=False, file=sys.stdout):
 def dmsg(sample, error, json=False, file=sys.stdout):
     if json:
         print(
-            dumps({"decontamination": {"sample": sample, "status": error}}), file=file
+            dumps({"decontamination": {"sample": sample.name, "status": error}}),
+            file=file,
         )
 
 
