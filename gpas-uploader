@@ -48,14 +48,12 @@ if __name__ == "__main__":
             emsg("missing-file", json=args.json)
             exit(1)
         try:
-            validation = validate.Samplesheet(samplesheet).samples
+            validss = validate.Samplesheet(samplesheet)
         except GpasError:
-            errors = []
-            verr(errors, json=args.json)
+            # report exceptions raised during validation
             exit(1)
 
-        #        print(validation, file=sys.stderr)
-        smsg(validation, json=args.json)
+        print(validss.validate())
 
     elif args.command == "decontaminate":
         validation = None
@@ -64,7 +62,6 @@ if __name__ == "__main__":
             validation = json.load(open(args.samplesheet))["submission"]
         else:
             validation = validate.Samplesheet(Path(args.samplesheet))
-        #            smsg(validation, json=args.json)
         parent = Path(args.samplesheet).resolve().parent
         for sample in validation.samples:
             cr = Decontamination(
