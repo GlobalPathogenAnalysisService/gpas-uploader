@@ -9,13 +9,13 @@ class GpasError(Exception):
 def emsg(error, json=False, file=sys.stdout):
     if json:
         print(dumps({"error": error}), file=file)
-        sys.stdout.flush()
+        file.flush()
 
 
 def smsg(samples, json=False, file=sys.stdout):
     if json:
         print(dumps({"submission": samples}), file=file)
-        sys.stdout.flush()
+        file.flush()
 
 
 def dmsg(sample, error, msg=None, json=False, file=sys.stdout):
@@ -29,13 +29,13 @@ def dmsg(sample, error, msg=None, json=False, file=sys.stdout):
         print(
             dumps({"decontamination": payload}), file=file,
         )
-        sys.stdout.flush()
+        file.flush()
 
 
 def verr(errors, json=False, file=sys.stdout):
     if json:
         print(dumps({"validation": errors}))
-        sys.stdout.flush()
+        file.flush()
 
 
 def derr(sample, error, json=False, file=sys.stdout):
@@ -51,4 +51,4 @@ def derr(sample, error, json=False, file=sys.stdout):
                 }
             )
         )
-        sys.stdout.flush()
+        file.flush()
