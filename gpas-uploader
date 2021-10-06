@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gpas-uploaded script
+gpas-uploader script
 """
 
 import argparse
@@ -55,6 +55,7 @@ if __name__ == "__main__":
             exit(1)
 
         print(json.dumps(validss.validate()))
+        sys.stdout.flush()
 
     elif args.command == "decontaminate":
         if not args.json:
@@ -65,7 +66,8 @@ if __name__ == "__main__":
 
         for sample in validation.samples:
             cr = Decontamination(sample.fq1, sample.fq2)
-            dmsg(sample, "started", json=args.json)
+            dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=args.json)
+            dmsg(sample, "started", msg={"file": str(sample.fq2.name)}, json=args.json)
             r = cr.result()
             if r == None:
                 # derr(sample, cr.error)
@@ -73,8 +75,19 @@ if __name__ == "__main__":
             else:
                 fq1, fq2 = r
                 sample.add_pe(fq1, md5sum(fq1), fq2, md5sum(fq2), validation.batch)
-                dmsg(sample, "completed", json=args.json)
+                dmsg(
+                    sample,
+                    "completed",
+                    msg={"file": str(sample.fq1.name), "cleaned": str(fq1)},
+                    json=args.json,
+                )
+                dmsg(
+                    sample,
+                    "completed",
+                    msg={"file": str(sample.fq2.name), "cleaned": str(fq2)},
+                    json=args.json,
+                )
         print(json.dumps(validation.make_submission()))
+        sys.stdout.flush()
     else:
         exit(1)
-    exit(0)
