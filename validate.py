@@ -113,10 +113,9 @@ class Samplesheet:
         return {
             "submission": {
                 "batch": {
-                    "fileName": "%s",
-                    "uploadedBy": "user@example.com",
-                    "organisation": "University of Oxford",
-                    "site": "University of Oxford",
+                    "fileName": self.batch,
+                    "organisation": "PHE",
+                    "site": "PHE OUH",
                     "uploadedOn": datetime.datetime.now().isoformat()[:-3] + "Z",
                     "samples": [s.to_submission() for s in self.samples],
                 }
