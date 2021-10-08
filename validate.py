@@ -4,9 +4,18 @@ import json
 import sys
 from pathlib import Path
 import datetime
+import hashlib
 from collections import defaultdict
 
 from error import GpasError
+
+
+def md5sum(fn):
+    digest = hashlib.md5()
+    with open(fn, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def parse_row(d, wd=None):
@@ -97,7 +106,7 @@ class Samplesheet:
                 else:
                     self.errors.append(rowerror)
 
-            self.batch = fn.stem
+            self.batch = f"RUN-{md5sum(fn)[:6]}"
 
     def validate(self):
         if not self.errors:
