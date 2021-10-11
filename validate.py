@@ -94,6 +94,8 @@ class Samplesheet:
     samples = []
     batch = None
     parent = None
+    site = None
+    org = None
     errors = []
 
     def __init__(self, fn, fastq_prefix=None):
@@ -105,6 +107,8 @@ class Samplesheet:
                     self.samples.append(rowdata)
                 else:
                     self.errors.append(rowerror)
+                self.site = rowdata.data["site"]
+                self.org = rowdata.data["organisation"]
 
             self.batch = f"RUN-{md5sum(fn)[:6]}"
 
@@ -123,8 +127,8 @@ class Samplesheet:
             "submission": {
                 "batch": {
                     "fileName": self.batch,
-                    "organisation": "PHE",
-                    "site": "PHE OUH",
+                    "organisation": self.org,
+                    "site": self.site,
                     "uploadedOn": datetime.datetime.now().isoformat()[:-3] + "Z",
                     "samples": [s.to_submission() for s in self.samples],
                 }
