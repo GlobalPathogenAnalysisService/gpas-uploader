@@ -18,6 +18,16 @@ def md5sum(fn):
     return digest.hexdigest()
 
 
+def hash(fn):
+    md5 = hashlib.md5()
+    sha = hashlib.sha256()
+    with open(fn, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            md5.update(chunk)
+            sha.update(chunk)
+    return md5.hexdigest(), sha.hexdigest()
+
+
 def parse_row(d, wd=None):
     errors = []
     samples = []
@@ -60,9 +70,11 @@ class Sample:
             {"r1_uri": str(batchname / fq1), "r1_md5": fq1md5},
             {"r2_uri": str(batchname / fq2), "r2_md5": fq2md5},
         ]
+        self.name = f"S2{fq1md5[:4]}{fq2md5[:4]}"
 
     def add_se(self, fq, fqmd5, batchname):
         self.data["seReads"] = [{"uri": str(batchname / fq), "md5": fqmd5}]
+        self.name = f"S2{fqmd5[:8]}"
 
     def to_submission(self):
         j = {
@@ -109,8 +121,8 @@ class Samplesheet:
                     self.errors.append(rowerror)
                 self.site = rowdata.data["site"]
                 self.org = rowdata.data["organisation"]
-
-            self.batch = f"RUN-{md5sum(fn)[:6]}"
+            _, shasum = hash(fn)
+            self.batch = f"B{shasum[:6]}"
 
     def validate(self):
         if not self.errors:
