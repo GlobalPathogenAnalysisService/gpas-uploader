@@ -22,20 +22,20 @@ def hash(fn):
 
 
 def parse_row(d, wd=None):
-    errors = None
+    errors = []
     samples = []
 
     # name = d["name"]
     # by default choose an RFC 4122
 
     if "Illumina" not in d["instrument_platform"]:
-        errors = {"sample": d["name"], "error": "bad-instrument"}
+        errors.append({"sample": d["name"], "error": "bad-instrument"})
 
     fq1_path = wd / Path(d["fastq1"])
     fq2_path = wd / Path(d["fastq2"])
 
     if not fq1_path.exists() or not fq2_path.exists():
-        errors = {"sample": d["name"], "error": "file-missing"}
+        errors.append({"sample": d["name"], "error": "file-missing"})
 
     return Sample(fq1=fq1_path, fq2=fq2_path, data=d), errors
 
@@ -64,11 +64,11 @@ class Sample:
             {"r1_uri": str(batchname / fq1), "r1_md5": fq1md5},
             {"r2_uri": str(batchname / fq2), "r2_md5": fq2md5},
         ]
-        self.name = f"S2{fq1md5[:4]}{fq2md5[:4]}"
+        # self.name = f"S2{fq1md5[:4]}{fq2md5[:4]}"
 
     def add_se(self, fq, fqmd5, batchname):
         self.data["seReads"] = [{"uri": str(batchname / fq), "md5": fqmd5}]
-        self.name = f"S2{fqmd5[:8]}"
+        # self.name = f"S2{fqmd5[:8]}"
 
     def to_submission(self):
         j = {
@@ -112,7 +112,8 @@ class Samplesheet:
                 if not rowerror:
                     self.samples.append(rowdata)
                 else:
-                    self.errors.append(rowerror)
+                    for err in rowerror:
+                        self.errors.append(err)
                 self.site = rowdata.data["site"]
                 self.org = rowdata.data["organisation"]
             _, shasum = hash(fn)
