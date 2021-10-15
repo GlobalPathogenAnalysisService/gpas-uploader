@@ -67,12 +67,10 @@ if __name__ == "__main__":
                 pass
             else:
                 fq1, fq2 = r
+                fq1md5, fq1sha = validate.hash(fq1)
+                fq2md5, fq2sha = validate.hash(fq2)
                 sample.add_pe(
-                    fq1,
-                    validate.md5sum(fq1),
-                    fq2,
-                    validate.md5sum(fq2),
-                    validation.batch,
+                    fq1, fq1md5, fq2, fq2md5, validation.batch,
                 )
                 dmsg(
                     sample,

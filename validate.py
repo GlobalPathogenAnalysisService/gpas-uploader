@@ -5,17 +5,10 @@ import sys
 from pathlib import Path
 import datetime
 import hashlib
+import uuid
 from collections import defaultdict
 
 from error import GpasError
-
-
-def md5sum(fn):
-    digest = hashlib.md5()
-    with open(fn, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def hash(fn):
@@ -32,7 +25,9 @@ def parse_row(d, wd=None):
     errors = []
     samples = []
 
-    name = d["name"]
+    # name = d["name"]
+    # by default choose an RFC 4122
+    name = str(uuid.uuid4())
 
     if "Illumina" not in d["instrument_platform"]:
         errors.append({"instrument": "bad-instrument"})
