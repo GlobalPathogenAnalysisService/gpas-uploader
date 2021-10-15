@@ -22,23 +22,22 @@ def hash(fn):
 
 
 def parse_row(d, wd=None):
-    errors = []
+    errors = None
     samples = []
 
     # name = d["name"]
     # by default choose an RFC 4122
-    name = str(uuid.uuid4())
 
     if "Illumina" not in d["instrument_platform"]:
-        errors.append({"instrument": "bad-instrument"})
+        errors = {"sample": d["name"], "error": "bad-instrument"}
 
     fq1_path = wd / Path(d["fastq1"])
     fq2_path = wd / Path(d["fastq2"])
 
     if not fq1_path.exists() or not fq2_path.exists():
-        errors.append({"sample": name, "error": "file-missing"})
+        errors = {"sample": d["name"], "error": "file-missing"}
 
-    return Sample(name, fq1=fq1_path, fq2=fq2_path, data=d), errors
+    return Sample(fq1=fq1_path, fq2=fq2_path, data=d), errors
 
 
 class Sample:
@@ -47,10 +46,10 @@ class Sample:
     fq1 = None
     fq2 = None
 
-    def __init__(self, name, fq1, fq2=None, data=None):
+    def __init__(self, fq1, fq2=None, data=None):
         if data:
             self.data = data
-        self.name = name
+        self.name = str(uuid.uuid4())
         self.fq1 = fq1
         self.fq2 = fq2
 
