@@ -5,7 +5,7 @@ from pathlib import Path
 from os.path import isabs
 
 riak = Path("./readItAndKeep").resolve()
-ref_genome = "MN908947.fasta"
+ref_genome = "MN908947_no_polyA.fasta"
 
 # test riak installation
 if not riak.exists():
