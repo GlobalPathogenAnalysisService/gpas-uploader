@@ -6,6 +6,7 @@ from pathlib import Path
 import datetime
 import hashlib
 import uuid
+import b24
 from collections import defaultdict
 
 from error import GpasError
@@ -26,18 +27,26 @@ def parse_row(d, wd=None):
     samples = []
 
     # name = d["name"]
-    # by default choose an RFC 4122
 
-    if "Illumina" not in d["instrument_platform"]:
+    if "Illumina" in d["instrument_platform"]:
+        fq1_path = wd / Path(d["fastq1"])
+        fq2_path = wd / Path(d["fastq2"])
+
+        if not fq1_path.exists() or not fq2_path.exists():
+            errors.append({"sample": d["name"], "error": "file-missing"})
+
+        return Sample(fq1=fq1_path, fq2=fq2_path, data=d), errors
+
+    elif "Nanopore" in d["instrument_platform"]:
+        fq_path = wd / Path(d["fastq"])
+
+        if not fq_path.exists():
+            errors.append({"sample": d["name"], "error": "file-missing"})
+
+        return Sample(fq1=fq_path, data=d), errors
+
+    else:
         errors.append({"sample": d["name"], "error": "bad-instrument"})
-
-    fq1_path = wd / Path(d["fastq1"])
-    fq2_path = wd / Path(d["fastq2"])
-
-    if not fq1_path.exists() or not fq2_path.exists():
-        errors.append({"sample": d["name"], "error": "file-missing"})
-
-    return Sample(fq1=fq1_path, fq2=fq2_path, data=d), errors
 
 
 class Sample:
@@ -49,6 +58,8 @@ class Sample:
     def __init__(self, fq1, fq2=None, data=None):
         if data:
             self.data = data
+
+        # by default choose an RFC 4122
         self.name = str(uuid.uuid4())
         self.fq1 = fq1
         self.fq2 = fq2
@@ -73,8 +84,8 @@ class Sample:
     def to_submission(self):
         j = {
             "name": self.name,
-            "fastq1": self.data["fastq1"],
-            "fastq2": self.data["fastq2"],
+            #            "fastq1": self.data["fastq1"],
+            #            "fastq2": self.data["fastq2"],
             "specimenOrganism": self.data["specimenOrganism"],
             "host": self.data["host"],
             "collectionDate": self.data["collectionDate"],
@@ -117,7 +128,7 @@ class Samplesheet:
                 self.site = rowdata.data["site"]
                 self.org = rowdata.data["organisation"]
             _, shasum = hash(fn)
-            self.batch = f"B{shasum[:6]}"
+            self.batch = f"B-{b24.name(fn)}"
 
     def validate(self):
         if not self.errors:
