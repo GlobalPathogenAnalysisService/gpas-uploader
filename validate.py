@@ -84,8 +84,6 @@ class Sample:
     def to_submission(self):
         j = {
             "name": self.name,
-            #            "fastq1": self.data["fastq1"],
-            #            "fastq2": self.data["fastq2"],
             "specimenOrganism": self.data["specimenOrganism"],
             "host": self.data["host"],
             "collectionDate": self.data["collectionDate"],
