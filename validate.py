@@ -116,10 +116,11 @@ class Samplesheet:
     errors = []
 
     def __init__(self, fn, fastq_prefix=None):
+        self.parent = fn.parent
         with open(fn, "r") as fd:
             reader = csv.DictReader(fd)
             for index, row in enumerate(reader):
-                rowdata, rowerror = parse_row(row, wd=fn.parent)
+                rowdata, rowerror = parse_row(row, wd=self.parent)
                 if not rowerror:
                     self.samples.append(rowdata)
                 else:
