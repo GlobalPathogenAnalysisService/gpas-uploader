@@ -83,6 +83,6 @@ class Decontamination:
             if self.fq2:
                 return self.fq1, self.fq2
             else:
-                return self.fq2
+                return self.fq1
         else:
             return None
