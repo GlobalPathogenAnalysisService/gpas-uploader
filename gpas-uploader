@@ -68,7 +68,7 @@ def submit_onp(sample):
     if r == None:
         # derr(sample, cr.error)
         pass
-    elif len(r) == 1:
+    else:
         # single read run
         fq = r
         fqmd5, fqsha = validate.hash(fq)
