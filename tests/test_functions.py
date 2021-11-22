@@ -1,10 +1,19 @@
-import pytest, validate
+import pytest, pathlib
 
-from pathlib import Path
+import validate
+
+def test_spreadsheet_validation_correctly_fails():
+
+    with pytest.raises(Exception) as e_info:
+        validate.Samplesheet('examples/none-existent-file.csv')
+
+    # forgot file extension
+    with pytest.raises(Exception) as e_info:
+        validate.Samplesheet('examples/illumina-samplesheet-template-good')
 
 def test_validate_illumina_spreadsheet():
 
-    samplesheet = Path('examples/illumina-samplesheet-template-good.csv')
+    samplesheet = pathlib.Path('examples/illumina-samplesheet-template-good.csv')
 
     validss = validate.Samplesheet(samplesheet)
 
@@ -12,7 +21,7 @@ def test_validate_illumina_spreadsheet():
 
 def test_validate_nanopore_spreadsheet():
 
-    samplesheet = Path('examples/nanopore-samplesheet-template-good.csv')
+    samplesheet = pathlib.Path('examples/nanopore-samplesheet-template-good.csv')
 
     validss = validate.Samplesheet(samplesheet)
 

@@ -1,2 +1,2 @@
 name,fastq,organisation,site,specimenOrganism,host,collectionDate,country,submissionTitle,submissionDescription,instrument_platform,instrument_model,flowcell
-ERR4082950,ERR4082950.fastq.gz,my org,my site,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
+MN908947,MN908947.fastq.gz,my org,my site,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
