@@ -31,10 +31,10 @@ import_args.add_argument("--dir", default=None)
 import_args.add_argument("samplesheet")
 
 
-def submit_illumina(sample):
+def submit_illumina(sample, use_json):
     cr = Decontamination(sample.fq1, sample.fq2, sample=sample.name)
-    dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=args.json)
-    dmsg(sample, "started", msg={"file": str(sample.fq2.name)}, json=args.json)
+    dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=use_json)
+    dmsg(sample, "started", msg={"file": str(sample.fq2.name)}, json=use_json)
     r = cr.result()
     if r == None:
         # derr(sample, cr.error)
@@ -51,19 +51,19 @@ def submit_illumina(sample):
             sample,
             "completed",
             msg={"file": str(sample.fq1.name), "cleaned": str(fq1)},
-            json=args.json,
+            json=use_json,
         )
         dmsg(
             sample,
             "completed",
             msg={"file": str(sample.fq2.name), "cleaned": str(fq2)},
-            json=args.json,
+            json=use_json,
         )
 
 
-def submit_onp(sample):
+def submit_onp(sample, use_json):
     cr = Decontamination(sample.fq1, sample=sample.name)
-    dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=args.json)
+    dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=use_json)
     r = cr.result()
     if r == None:
         # derr(sample, cr.error)
@@ -79,7 +79,7 @@ def submit_onp(sample):
             sample,
             "completed",
             msg={"file": str(sample.fq1.name), "cleaned": str(fq)},
-            json=args.json,
+            json=use_json,
         )
 
 
@@ -113,9 +113,9 @@ if __name__ == "__main__":
             for sample in validation.samples:
                 print(f"{sample.data['name']},{sample.name}", file=snfd)
                 if sample.fq2:
-                    submit_illumina(sample)
+                    submit_illumina(sample, use_json=args.json)
                 else:
-                    submit_onp(sample)
+                    submit_onp(sample, use_json=args.json)
             print(json.dumps(validation.make_submission()))
             sys.stdout.flush()
     else:
