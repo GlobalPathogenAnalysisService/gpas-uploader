@@ -35,12 +35,12 @@ class Decontamination:
         if not Path(fq1).exists():
             print("missing", fq1, file=sys.stderr)
             raise GpasError()
-        self.fq1 = Path(outdir) / f"{sample}.reads_1.fastq.gz"
 
         if fq2:
             if not Path(fq2).exists():
                 print("missing", fq2, file=sys.stderr)
                 raise GpasError()
+            self.fq1 = Path(outdir) / f"{sample}.reads_1.fastq.gz"
             self.fq2 = Path(outdir) / f"{sample}.reads_2.fastq.gz"
             # paired run
             self.process = subprocess.Popen(
@@ -60,6 +60,7 @@ class Decontamination:
             )
         else:
             # single end
+            self.fq1 = Path(outdir) / f"{sample}.reads.fastq.gz"
             self.process = subprocess.Popen(
                 [
                     riak,
