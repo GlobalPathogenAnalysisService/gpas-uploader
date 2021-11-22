@@ -1,44 +1,28 @@
-import pytest, validate, imp
+import pytest, pathlib
 
-from cleanreads import Decontamination
+import validate
 
-gpas_uploader = imp.load_source('gpas-uploader','./gpas-uploader')
+def test_spreadsheet_validation_correctly_fails():
 
-from pathlib import Path
+    with pytest.raises(Exception) as e_info:
+        validate.Samplesheet('examples/none-existent-file.csv')
+
+    # forgot file extension
+    with pytest.raises(Exception) as e_info:
+        validate.Samplesheet('examples/illumina-samplesheet-template-good')
 
 def test_validate_illumina_spreadsheet():
 
-    samplesheet = Path('examples/illumina-samplesheet-template-good.csv')
+    samplesheet = pathlib.Path('examples/illumina-samplesheet-template-good.csv')
 
     validss = validate.Samplesheet(samplesheet)
 
-    print(validss.validate())
     assert validss.validate()['validation']['status'] == 'completed'
 
 def test_validate_nanopore_spreadsheet():
 
-    samplesheet2 = Path('examples/nanopore-samplesheet-template-good.csv')
+    samplesheet = pathlib.Path('examples/nanopore-samplesheet-template-good.csv')
 
-    validss = validate.Samplesheet(samplesheet2)
+    validss = validate.Samplesheet(samplesheet)
 
-    print(validss.validate())
     assert validss.validate()['validation']['status'] == 'completed'
-
-def test_decontaminate_illumina_spreadsheet():
-
-    Decontamination('examples/MN908947_1.fastq.gz',sample='MN908947')
-    
-    samplesheet = Path('examples/illumina-samplesheet-template-good.csv')
-
-    validation = validate.Samplesheet(samplesheet)
-
-    assert validation.validate()['validation']['status'] == 'completed'
-
-    for sample in validation.samples:
-
-        if sample.fq2:
-            gpas_uploader.submit_illumina(sample, use_json=True)
-            
-        print(json.dumps(validation.make_submission()))
-
-

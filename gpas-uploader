@@ -84,6 +84,7 @@ def submit_onp(sample, use_json):
 
 
 if __name__ == "__main__":
+
     args = parser.parse_args()
 
     if args.command == "validate":
