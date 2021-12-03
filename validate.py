@@ -8,8 +8,6 @@ import uuid
 import b24
 from collections import defaultdict
 
-import pandas
-
 from error import GpasError
 
 
