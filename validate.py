@@ -1,6 +1,5 @@
 # from openpyxl import load_workbook
-import csv
-import json
+import json, csv, copy
 import sys
 from pathlib import Path
 import datetime
@@ -8,6 +7,8 @@ import hashlib
 import uuid
 import b24
 from collections import defaultdict
+
+import pandas
 
 from error import GpasError
 
@@ -21,14 +22,24 @@ def hash(fn):
             sha.update(chunk)
     return md5.hexdigest(), sha.hexdigest()
 
+# shared_columns={'name','organisation','tags','specimenOrganism','host','collectionDate','country','submissionTitle','submissionDescription','instrument_platform','instrument_model','flowcell'}
+#
+# illumina_columns=copy.deepcopy(shared_columns)
+# illumina_columns.add('fastq1')
+# illumina_columns.add('fastq2')
+#
+# nanopore_columns=copy.deepcopy(shared_columns)
+# nanopore_columns.add('fastq')
+
 
 def parse_row(d, wd=None):
     errors = []
     samples = []
 
-    # name = d["name"]
-
     if "Illumina" in d["instrument_platform"]:
+
+        # assert set(d.keys())==illumina_columns, 'columns in input sheet different to specification'
+
         fq1_path = wd / Path(d["fastq1"])
         fq2_path = wd / Path(d["fastq2"])
 
@@ -38,6 +49,9 @@ def parse_row(d, wd=None):
         return Sample(fq1=fq1_path, fq2=fq2_path, data=d), errors
 
     elif "Nanopore" in d["instrument_platform"]:
+
+        # assert set(d.keys())==nanopore_columns, 'columns in input sheet different to specification'
+
         fq_path = wd / Path(d["fastq"])
 
         if not fq_path.exists():
@@ -84,6 +98,7 @@ class Sample:
     def to_submission(self):
         j = {
             "name": self.name,
+            "tags": self.data['tags'].split(';'),
             "specimenOrganism": self.data["specimenOrganism"],
             "host": self.data["host"],
             "collectionDate": self.data["collectionDate"],
@@ -124,7 +139,6 @@ class Samplesheet:
                 else:
                     for err in rowerror:
                         self.errors.append(err)
-                self.site = rowdata.data["site"]
                 self.org = rowdata.data["organisation"]
             _, shasum = hash(fn)
             self.batch = f"B-{b24.name(fn)}"
@@ -145,7 +159,6 @@ class Samplesheet:
                 "batch": {
                     "fileName": self.batch,
                     "organisation": self.org,
-                    "site": self.site,
                     "uploadedOn": datetime.datetime.now().isoformat()[:-3] + "Z",
                     "samples": [s.to_submission() for s in self.samples],
                 }
