@@ -25,6 +25,14 @@ jobs:
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
 
+    - name: Install riak for unit testing
+      run: |
+        git clone git@github.com:GenomePathogenAnalysisService/read-it-and-keep.git
+        cd read-it-and-keep/src/ && make
+        cp readItAndKeep ../..
+        cd ../..
+        rm -r read-it-and-keep/
+
     - name: Test with pytest
       run: |
         pytest --exitfirst --verbose --failed-first \
