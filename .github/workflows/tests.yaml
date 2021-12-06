@@ -27,7 +27,7 @@ jobs:
 
     - name: Install riak for unit testing
       run: |
-        git clone git@github.com:GenomePathogenAnalysisService/read-it-and-keep.git
+        git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
         cd read-it-and-keep/src/ && make
         cp readItAndKeep ../..
         cd ../..
