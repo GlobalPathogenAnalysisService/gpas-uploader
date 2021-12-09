@@ -96,7 +96,7 @@ class Sample:
     def to_submission(self):
         j = {
             "name": self.name,
-            "tags": self.data['tags'].split(';'),
+            "tags": self.data['tags'].split(':'),
             "specimenOrganism": self.data["specimenOrganism"],
             "host": self.data["host"],
             "collectionDate": self.data["collectionDate"],

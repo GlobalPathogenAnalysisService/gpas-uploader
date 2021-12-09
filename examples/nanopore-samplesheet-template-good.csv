@@ -1,3 +1,3 @@
 name,fastq,organisation,tags,specimenOrganism,host,collectionDate,country,submissionTitle,submissionDescription,instrument_platform,instrument_model,flowcell
-MN908947,MN908947.fastq.gz,my org,negative control;site0;repeat,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
-MN908947,MN908947.fastq.gz,my org,negative control;site0;repeat,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
+MN908947,MN908947.fastq.gz,my org,negative control:site0:repeat,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
+MN908947,MN908947.fastq.gz,my org,negative control:site0:repeat,SARS-CoV-2,human,2000-01-01,United Kingdom,covid study,study of covid,Nanopore,GridION,96
