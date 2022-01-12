@@ -34,6 +34,11 @@ def parse_row(d, wd=None):
     errors = []
     samples = []
 
+    try:
+        datetime.date.fromisoformat(d["collectionDate"])
+    except ValueError:
+        errors.append({"sample": d["name"], "error": "collectionDate not in ISO format"})
+
     if "Illumina" in d["instrument_platform"]:
 
         # assert set(d.keys())==illumina_columns, 'columns in input sheet different to specification'
