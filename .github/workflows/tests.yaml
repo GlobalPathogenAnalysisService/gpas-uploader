@@ -38,7 +38,7 @@ jobs:
 
     - name: Install readItAndKeep
       run: |
-        git clone https://github.com:GenomePathogenAnalysisService/read-it-and-keep.git
+        git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
         cd read-it-and-keep/src
         make
         mv readItAndKeep ../..
