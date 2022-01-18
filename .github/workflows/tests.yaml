@@ -43,7 +43,7 @@ jobs:
         cd read-it-and-keep/src
         make
         mv readItAndKeep ../../bin
-        echo "::add-path::$GITHUB_WORKSPACE/bin"
+        echo "$HOME/bin" >> $GITHUB_PATH
         cd ../..
         rm -r read-it-and-keep
 
