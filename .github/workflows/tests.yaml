@@ -25,6 +25,16 @@ jobs:
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
 
+    - name: Install samtools
+      run: |
+         wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
+         bunzip2 samtools-1.14.tar.bz2
+         tar xvf samtools-1.14.tar
+         cd samtools-1.14
+         ./configure
+         make
+         make install
+
     - name: Test with pytest
       run: |
         pytest --exitfirst --verbose --failed-first \
