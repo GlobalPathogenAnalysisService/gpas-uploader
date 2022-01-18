@@ -27,6 +27,27 @@ def test_validate_nanopore_spreadsheet():
 
     assert validss.validate()['validation']['status'] == 'completed'
 
+def test_riak_ok():
+
+    process = subprocess.Popen(
+        [
+            'readItAndKeep',
+            '--ref_fasta',
+            'examples/MN908947.fasta',
+            '--reads1',
+            'examples/MN908947_1.fastq.gz',
+            '--outprefix',
+            'foo'
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    stdout, stderr = process.communicate()
+
+    # insist that the above command did not fail
+    assert process.returncode == 0
+
 def test_samtools_ok():
 
     process = subprocess.Popen(
@@ -35,8 +56,13 @@ def test_samtools_ok():
             'fastq',
             '-o',
             'foo.fastq',
-            'examples/MN908946.bam',
+            'examples/MN908947.bam',
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+    stdout, stderr = process.communicate()
+
+    # insist that the above command did not fail
+    assert process.returncode == 0
