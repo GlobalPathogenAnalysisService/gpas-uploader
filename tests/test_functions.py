@@ -26,3 +26,5 @@ def test_validate_nanopore_spreadsheet():
     validss = validate.Samplesheet(samplesheet)
 
     assert validss.validate()['validation']['status'] == 'completed'
+
+def test_samtools_ok():

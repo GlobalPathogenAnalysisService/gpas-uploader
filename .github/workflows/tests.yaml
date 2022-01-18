@@ -36,6 +36,14 @@ jobs:
          sudo make install
          cd ..
 
+    - name: Install readItAndKeep
+      run: |
+        git clone git@github.com:GenomePathogenAnalysisService/read-it-and-keep.git
+        cd read-it-and-keep/src
+        make
+        mv readItAndKeep ../..
+        cd ../..
+
     - name: Test with pytest
       run: |
         pytest --exitfirst --verbose --failed-first \
