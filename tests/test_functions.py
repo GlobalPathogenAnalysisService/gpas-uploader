@@ -29,9 +29,13 @@ def test_validate_nanopore_spreadsheet():
 
 def test_samtools_ok():
 
-    self.process = subprocess.Popen(
+    process = subprocess.Popen(
         [
-            "samtools fastq -o foo.fastq examples/MN908947.bam",
+            'samtools',
+            'fastq',
+            '-o',
+            'foo.fastq',
+            'examples/MN908946.bam',
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
