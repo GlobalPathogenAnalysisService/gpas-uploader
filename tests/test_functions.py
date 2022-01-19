@@ -1,4 +1,6 @@
-import pytest, pathlib
+import pytest
+import pathlib
+import shutil
 import subprocess
 import validate
 
@@ -29,9 +31,16 @@ def test_validate_nanopore_spreadsheet():
 
 def test_riak_ok():
 
+    if pathlib.Path("./readItAndKeep").exists():
+        riak = pathlib.Path("./readItAndKeep").resolve()
+
+    # or if there is one in the $PATH use that one
+    elif shutil.which('readItAndKeep') is not None:
+        riak = pathlib.Path(shutil.which('readItAndKeep'))
+
     process = subprocess.Popen(
         [
-            'readItAndKeep',
+            riak,
             '--ref_fasta',
             'examples/MN908947.fasta',
             '--reads1',
