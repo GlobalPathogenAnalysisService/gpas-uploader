@@ -78,7 +78,7 @@ def parse_row(d, wd=None):
             # stdout, stderr = process2.communicate()
 
             # insist that the above command did not fail
-            # assert process2.returncode == 0
+            assert process1.returncode == 0
 
             d['fastq1'] = stem + "_1.fastq.gz"
             d['fastq2'] = stem + "_2.fastq.gz"
@@ -113,6 +113,8 @@ def parse_row(d, wd=None):
 
             # wait for it to finish otherwise the file will not be present
             process.wait()
+
+            assert process.returncode == 0
 
             # now that we have a FASTQ, add it to the dict
             d["fastq"] = stem + '.fastq.gz'
