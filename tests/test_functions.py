@@ -59,6 +59,7 @@ def test_riak_ok():
 
 def test_samtools_ok():
 
+    # assumes samtools is in the $PATH!
     process = subprocess.Popen(
         [
             'samtools',
