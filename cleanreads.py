@@ -1,15 +1,24 @@
 import sys
 import subprocess
+import shutil
 from error import GpasError
 from pathlib import Path
 from os.path import isabs
 
-riak = Path("./readItAndKeep").resolve()
 ref_genome = "MN908947_no_polyA.fasta"
 
-# test riak installation
-if not riak.exists():
-    raise GpasError({"decontamination": riak})
+# if there is a local riak
+# (as will be the case inside the Electron client)
+# use that one
+if Path("./readItAndKeep").exists():
+    riak = Path("./readItAndKeep").resolve()
+
+# or if there is one in the $PATH use that one
+elif shutil.which('readItAndKeep') is not None:
+    riak = Path(shutil.which('readItAndKeep'))
+
+else:
+    raise GpasError({"decontamination": "read removal tool not found"})
 
 with subprocess.Popen(
     [riak, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -17,7 +26,6 @@ with subprocess.Popen(
     p_test.wait()
     if p_test.returncode != 0:
         raise GpasError({"decontamination": "read removal tool error"})
-
 
 class Decontamination:
     process = None
