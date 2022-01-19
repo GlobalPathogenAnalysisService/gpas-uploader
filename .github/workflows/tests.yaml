@@ -38,12 +38,10 @@ jobs:
 
     - name: Install readItAndKeep
       run: |
-        mkdir bin
         git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
         cd read-it-and-keep/src
         make
-        mv readItAndKeep ../../bin
-        echo "$HOME/bin" >> $GITHUB_PATH
+        mv readItAndKeep ../..
         cd ../..
         rm -r read-it-and-keep
 
