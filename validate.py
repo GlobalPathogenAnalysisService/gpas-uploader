@@ -5,6 +5,7 @@ from pathlib import Path
 import datetime
 import hashlib
 import uuid
+import subprocess
 import b24
 from collections import defaultdict
 
@@ -39,7 +40,48 @@ def parse_row(d, wd=None):
     except ValueError:
         errors.append({"sample": d["name"], "error": "collectionDate not in ISO format"})
 
+    bam_file = True if 'bam' in d.keys() else False
+
     if "Illumina" in d["instrument_platform"]:
+
+        if bam_file:
+
+            stem = d['bam'].split('.bam')[0]
+
+            process1 = subprocess.Popen(
+                [
+                    'samtools',
+                    'sort',
+                    '-n',
+                    wd / Path(d['bam'])
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            process2 = subprocess.run(
+                [
+                    'samtools',
+                    'fastq',
+                    '-N',
+                    '-1',
+                    wd / Path(stem + "_1.fastq.gz"),
+                    '-2',
+                    wd / Path(stem+"_2.fastq.gz"),
+                ],
+                stdin = process1.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            process1.wait()
+
+            # stdout, stderr = process2.communicate()
+
+            # insist that the above command did not fail
+            # assert process2.returncode == 0
+
+            d['fastq1'] = stem + "_1.fastq.gz"
+            d['fastq2'] = stem + "_2.fastq.gz"
 
         # assert set(d.keys())==illumina_columns, 'columns in input sheet different to specification'
 
@@ -53,12 +95,33 @@ def parse_row(d, wd=None):
 
     elif "Nanopore" in d["instrument_platform"]:
 
-        # assert set(d.keys())==nanopore_columns, 'columns in input sheet different to specification'
+        if bam_file:
+
+            stem = d['bam'].split('.bam')[0]
+
+            process = subprocess.Popen(
+                [
+                    'samtools',
+                    'fastq',
+                    '-o',
+                    wd / Path(stem + '.fastq.gz'),
+                    wd / Path(d['bam'])
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            # wait for it to finish otherwise the file will not be present
+            process.wait()
+
+            # now that we have a FASTQ, add it to the dict
+            d["fastq"] = stem + '.fastq.gz'
 
         fq_path = wd / Path(d["fastq"])
 
         if not fq_path.exists():
             errors.append({"sample": d["name"], "error": "file-missing"})
+            print(fq_path)
 
         return Sample(fq1=fq_path, data=d), errors
 
