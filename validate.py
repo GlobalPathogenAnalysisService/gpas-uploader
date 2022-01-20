@@ -5,6 +5,7 @@ from pathlib import Path
 import datetime
 import hashlib
 import uuid
+import subprocess
 import b24
 from collections import defaultdict
 
@@ -31,21 +32,72 @@ def hash(fn):
 
 
 def parse_row(d, wd=None):
+
     errors = []
     samples = []
 
+    # insist that the collectionDate is in the ISO format.
+    # the Electron client will then enforce YYYY-MM for organisations that consider this PII
+    # hence the precise date will not leave their network
     try:
         datetime.date.fromisoformat(d["collectionDate"])
     except ValueError:
         errors.append({"sample": d["name"], "error": "collectionDate not in ISO format"})
 
+    # check that all samples have at least one tag
+    if d['tags'] == '':
+        errors.append({"sample": d["name"], "error": "must have at least one tag"})
+
+    # check to see if this upload CSV file specifies BAM files (rather than FASTQs)
+    bam_file = True if 'bam' in d.keys() else False
+
+    # treat the samples differently depending on sequencing instrument
     if "Illumina" in d["instrument_platform"]:
 
-        # assert set(d.keys())==illumina_columns, 'columns in input sheet different to specification'
+        # if it contains BAM files, we first need to run samtools to create FASTQ files
+        if bam_file:
+
+            stem = d['bam'].split('.bam')[0]
+
+            process1 = subprocess.Popen(
+                [
+                    'samtools',
+                    'sort',
+                    '-n',
+                    wd / Path(d['bam'])
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            process2 = subprocess.run(
+                [
+                    'samtools',
+                    'fastq',
+                    '-N',
+                    '-1',
+                    wd / Path(stem + "_1.fastq.gz"),
+                    '-2',
+                    wd / Path(stem+"_2.fastq.gz"),
+                ],
+                stdin = process1.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            # to stop a race condition
+            process1.wait()
+
+            # insist that the above command did not fail
+            assert process1.returncode == 0
+
+            # now record the names of the FASTQ files in the dict
+            d['fastq1'] = stem + "_1.fastq.gz"
+            d['fastq2'] = stem + "_2.fastq.gz"
 
         fq1_path = wd / Path(d["fastq1"])
         fq2_path = wd / Path(d["fastq2"])
 
+        # check that the FASTQ files specified in the upload CSV exist
         if not fq1_path.exists() or not fq2_path.exists():
             errors.append({"sample": d["name"], "error": "file-missing"})
 
@@ -53,7 +105,31 @@ def parse_row(d, wd=None):
 
     elif "Nanopore" in d["instrument_platform"]:
 
-        # assert set(d.keys())==nanopore_columns, 'columns in input sheet different to specification'
+        # if it contains BAM files, we first need to run samtools to create FASTQ files
+        if bam_file:
+
+            stem = d['bam'].split('.bam')[0]
+
+            process = subprocess.Popen(
+                [
+                    'samtools',
+                    'fastq',
+                    '-o',
+                    wd / Path(stem + '.fastq.gz'),
+                    wd / Path(d['bam'])
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            # wait for it to finish otherwise the file will not be present
+            process.wait()
+
+            # successful completion
+            assert process.returncode == 0
+
+            # now that we have a FASTQ, add it to the dict
+            d["fastq"] = stem + '.fastq.gz'
 
         fq_path = wd / Path(d["fastq"])
 
