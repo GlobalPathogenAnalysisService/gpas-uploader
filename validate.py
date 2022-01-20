@@ -32,18 +32,29 @@ def hash(fn):
 
 
 def parse_row(d, wd=None):
+
     errors = []
     samples = []
 
+    # insist that the collectionDate is in the ISO format.
+    # the Electron client will then enforce YYYY-MM for organisations that consider this PII
+    # hence the precise date will not leave their network
     try:
         datetime.date.fromisoformat(d["collectionDate"])
     except ValueError:
         errors.append({"sample": d["name"], "error": "collectionDate not in ISO format"})
 
+    # check that all samples have at least one tag
+    if d['tags'] == '':
+        errors.append({"sample": d["name"], "error": "must have at least one tag"})
+
+    # check to see if this upload CSV file specifies BAM files (rather than FASTQs)
     bam_file = True if 'bam' in d.keys() else False
 
+    # treat the samples differently depending on sequencing instrument
     if "Illumina" in d["instrument_platform"]:
 
+        # if it contains BAM files, we first need to run samtools to create FASTQ files
         if bam_file:
 
             stem = d['bam'].split('.bam')[0]
@@ -73,21 +84,20 @@ def parse_row(d, wd=None):
                 stderr=subprocess.PIPE
             )
 
+            # to stop a race condition
             process1.wait()
-
-            # stdout, stderr = process2.communicate()
 
             # insist that the above command did not fail
             assert process1.returncode == 0
 
+            # now record the names of the FASTQ files in the dict
             d['fastq1'] = stem + "_1.fastq.gz"
             d['fastq2'] = stem + "_2.fastq.gz"
-
-        # assert set(d.keys())==illumina_columns, 'columns in input sheet different to specification'
 
         fq1_path = wd / Path(d["fastq1"])
         fq2_path = wd / Path(d["fastq2"])
 
+        # check that the FASTQ files specified in the upload CSV exist
         if not fq1_path.exists() or not fq2_path.exists():
             errors.append({"sample": d["name"], "error": "file-missing"})
 
@@ -95,6 +105,7 @@ def parse_row(d, wd=None):
 
     elif "Nanopore" in d["instrument_platform"]:
 
+        # if it contains BAM files, we first need to run samtools to create FASTQ files
         if bam_file:
 
             stem = d['bam'].split('.bam')[0]
@@ -114,6 +125,7 @@ def parse_row(d, wd=None):
             # wait for it to finish otherwise the file will not be present
             process.wait()
 
+            # successful completion
             assert process.returncode == 0
 
             # now that we have a FASTQ, add it to the dict
@@ -123,7 +135,6 @@ def parse_row(d, wd=None):
 
         if not fq_path.exists():
             errors.append({"sample": d["name"], "error": "file-missing"})
-            print(fq_path)
 
         return Sample(fq1=fq_path, data=d), errors
 
