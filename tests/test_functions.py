@@ -83,10 +83,17 @@ def test_riak_ok(tmp_path):
 
 def test_samtools_ok(tmp_path):
 
+    if pathlib.Path("./samtools").exists():
+        samtools = pathlib.Path("./samtools").resolve()
+
+    # or if there is one in the $PATH use that one
+    elif shutil.which('samtools') is not None:
+        samtools = pathlib.Path(shutil.which('samtools'))
+
     # assumes samtools is in the $PATH!
     process = subprocess.Popen(
         [
-            'samtools',
+            samtools,
             'fastq',
             '-o',
             tmp_path / pathlib.Path('foo.fastq.gz'),

@@ -3,6 +3,7 @@ import json, csv, copy
 import sys
 from pathlib import Path
 import datetime
+import shutil
 import hashlib
 import uuid
 import subprocess
@@ -10,7 +11,6 @@ import b24
 from collections import defaultdict
 
 from error import GpasError
-
 
 def hash(fn):
     md5 = hashlib.md5()
@@ -20,6 +20,17 @@ def hash(fn):
             md5.update(chunk)
             sha.update(chunk)
     return md5.hexdigest(), sha.hexdigest()
+
+if Path("./samtools").exists():
+    print('local samtools')
+    samtools = Path("./samtools").resolve()
+
+# or if there is one in the $PATH use that one
+elif shutil.which('samtools') is not None:
+    samtools = Path(shutil.which('samtools'))
+
+else:
+    raise GpasError({"BAM conversion": "samtools not found"})
 
 # shared_columns={'name','organisation','tags','specimenOrganism','host','collectionDate','country','submissionTitle','submissionDescription','instrument_platform','instrument_model','flowcell'}
 #
@@ -31,7 +42,7 @@ def hash(fn):
 # nanopore_columns.add('fastq')
 
 
-def parse_row(d, wd=None):
+def parse_row(d, using_bams, wd=None):
 
     errors = []
     samples = []
@@ -48,20 +59,17 @@ def parse_row(d, wd=None):
     if d['tags'] == '':
         errors.append({"sample": d["name"], "error": "must have at least one tag"})
 
-    # check to see if this upload CSV file specifies BAM files (rather than FASTQs)
-    bam_file = True if 'bam' in d.keys() else False
-
     # treat the samples differently depending on sequencing instrument
     if "Illumina" in d["instrument_platform"]:
 
         # if it contains BAM files, we first need to run samtools to create FASTQ files
-        if bam_file:
+        if using_bams:
 
             stem = d['bam'].split('.bam')[0]
 
             process1 = subprocess.Popen(
                 [
-                    'samtools',
+                    samtools,
                     'sort',
                     '-n',
                     wd / Path(d['bam'])
@@ -71,7 +79,7 @@ def parse_row(d, wd=None):
             )
             process2 = subprocess.run(
                 [
-                    'samtools',
+                    samtools,
                     'fastq',
                     '-N',
                     '-1',
@@ -88,7 +96,7 @@ def parse_row(d, wd=None):
             process1.wait()
 
             # insist that the above command did not fail
-            assert process1.returncode == 0
+            assert process1.returncode == 0, 'samtools command failed'
 
             # now record the names of the FASTQ files in the dict
             d['fastq1'] = stem + "_1.fastq.gz"
@@ -106,13 +114,13 @@ def parse_row(d, wd=None):
     elif "Nanopore" in d["instrument_platform"]:
 
         # if it contains BAM files, we first need to run samtools to create FASTQ files
-        if bam_file:
+        if using_bams:
 
             stem = d['bam'].split('.bam')[0]
 
             process = subprocess.Popen(
                 [
-                    'samtools',
+                    samtools,
                     'fastq',
                     '-o',
                     wd / Path(stem + '.fastq.gz'),
@@ -126,7 +134,7 @@ def parse_row(d, wd=None):
             process.wait()
 
             # successful completion
-            assert process.returncode == 0
+            assert process.returncode == 0, 'samtools command failed'
 
             # now that we have a FASTQ, add it to the dict
             d["fastq"] = stem + '.fastq.gz'
@@ -143,6 +151,7 @@ def parse_row(d, wd=None):
 
 
 class Sample:
+
     name = None
     data = {}
     fq1 = None
@@ -168,7 +177,6 @@ class Sample:
             {"r1_uri": str(batchname / fq1), "r1_md5": fq1md5},
             {"r2_uri": str(batchname / fq2), "r2_md5": fq2md5},
         ]
-        # self.name = f"S2{fq1md5[:4]}{fq2md5[:4]}"
 
     def add_se(self, fq, fqmd5, batchname):
         self.data["seReads"] = [{"uri": str(batchname / fq), "md5": fqmd5}]
@@ -208,16 +216,25 @@ class Samplesheet:
     errors = []
 
     def __init__(self, fn, fastq_prefix=None):
+
         self.parent = fn.parent
+
+        # check to see if this upload CSV file specifies BAM files (rather than FASTQs)
+        with open(fn, "r") as fd:
+            using_bams = True if 'bam' in fd.readline() else False
+
         with open(fn, "r") as fd:
             reader = csv.DictReader(fd)
+
             for index, row in enumerate(reader):
-                rowdata, rowerror = parse_row(row, wd=self.parent)
+                rowdata, rowerror = parse_row(row, using_bams, wd=self.parent)
+
                 if not rowerror:
                     self.samples.append(rowdata)
                 else:
                     for err in rowerror:
                         self.errors.append(err)
+
                 self.org = rowdata.data["organisation"]
             _, shasum = hash(fn)
             self.batch = f"B-{b24.name(fn)}"

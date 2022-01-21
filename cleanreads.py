@@ -11,6 +11,7 @@ ref_genome = "MN908947_no_polyA.fasta"
 # (as will be the case inside the Electron client)
 # use that one
 if Path("./readItAndKeep").exists():
+    print('local riak')
     riak = Path("./readItAndKeep").resolve()
 
 # or if there is one in the $PATH use that one
