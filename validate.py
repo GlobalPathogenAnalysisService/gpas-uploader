@@ -22,7 +22,6 @@ def hash(fn):
     return md5.hexdigest(), sha.hexdigest()
 
 if Path("./samtools").exists():
-    print('local samtools')
     samtools = Path("./samtools").resolve()
 
 # or if there is one in the $PATH use that one
@@ -88,15 +87,15 @@ def parse_row(d, using_bams, wd=None):
                     wd / Path(stem+"_2.fastq.gz"),
                 ],
                 stdin = process1.stdout,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE
             )
 
             # to stop a race condition
             process1.wait()
 
             # insist that the above command did not fail
-            assert process1.returncode == 0, 'samtools command failed'
+            assert process2.returncode == 0, 'samtools command failed'
 
             # now record the names of the FASTQ files in the dict
             d['fastq1'] = stem + "_1.fastq.gz"
