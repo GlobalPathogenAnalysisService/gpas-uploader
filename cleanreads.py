@@ -54,6 +54,7 @@ class Decontamination:
             self.process = subprocess.Popen(
                 [
                     riak,
+                    "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
                     "--reads1",
@@ -72,6 +73,7 @@ class Decontamination:
             self.process = subprocess.Popen(
                 [
                     riak,
+                    "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
                     "--reads1",
