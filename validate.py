@@ -249,12 +249,15 @@ class Samplesheet:
             return {"validation": {"status": "failure", "samples": self.errors}}
 
     def make_submission(self):
+        currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
+        tzStartIndex = len(currentTime) - 6
+        currentTime = currentTime[:tzStartIndex] + "Z" + currentTime[tzStartIndex:]
         return {
             "submission": {
                 "batch": {
                     "fileName": self.batch,
                     "organisation": self.org,
-                    "uploadedOn": datetime.datetime.now().isoformat()[:-3] + "Z",
+                    "uploadedOn": currentTime,
                     "samples": [s.to_submission() for s in self.samples],
                 }
             }
