@@ -147,7 +147,7 @@ def parse_row(d, using_bams, wd=None):
 
     else:
         errors.append({"sample": d["name"], "error": "bad-instrument"})
-
+        return Sample(fq1=None, data=d), errors
 
 class Sample:
 
