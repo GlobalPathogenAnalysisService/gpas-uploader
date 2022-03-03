@@ -1,0 +1,4 @@
+batch,run_number,name,fastq1,fastq2,control,collection_date,tags,country,region,district,specimen_organism,host,instrument_platform,primer_scheme
+RUN1,RUN1.1,MN908947,/Users/fowler/packages/gpas-uploader/examples/MN908947_1.fastq.gz,/Users/fowler/packages/gpas-uploader/examples/MN908947_2.fastq.gz,neg,2022-02-01,site0:repeat,USA,Texas,1124,SARS-CoV-2,human,Illumina,auto
+RUN1,RUN1.1,MN908948,/Users/fowler/packages/gpas-uploader/examples/MN908948_1.fastq.gz,/Users/fowler/packages/gpas-uploader/examples/MN908948_2.fastq.gz,negative,2022-02-01,site0:repeat,US,Texas,1124,SARS-CoV-2,human,Illumina,auto
+

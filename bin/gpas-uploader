@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""
+gpas-uploader script
+"""
+
+import argparse
+from pathlib import Path
+# from error import *
+import sys
+from sys import exit
+import json
+# import validate
+# from cleanreads import Decontamination
+# from error import dmsg
+
+import gpas_uploader
+
+import time
+
+parser = argparse.ArgumentParser(description="GPAS sequencing data upload tool")
+parser.add_argument("--json", action="store_true", default=False)
+subparsers = parser.add_subparsers(dest="command")
+
+validate_args = subparsers.add_parser(
+    "validate", help="parse and validate a samplesheet"
+)
+validate_args.add_argument("samplesheet")
+validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
+
+import_args = subparsers.add_parser("decontaminate")
+import_args.add_argument("--dir", default='/tmp/')
+import_args.add_argument("samplesheet")
+
+# def submit_illumina(sample, use_json, save_to_dir):
+#     cr = Decontamination(sample.fq1, sample.fq2, sample=sample.name, outdir=save_to_dir)
+#     dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=use_json)
+#     dmsg(sample, "started", msg={"file": str(sample.fq2.name)}, json=use_json)
+#     r = cr.result()
+#     if r == None:
+#         # derr(sample, cr.error)
+#         pass
+#     elif len(r) == 2:
+#         # paired reads
+#         fq1, fq2 = r
+#         fq1md5, fq1sha = validate.hash(fq1)
+#         fq2md5, fq2sha = validate.hash(fq2)
+#         sample.add_pe(
+#             fq1, fq1md5, fq2, fq2md5, validation.batch,
+#         )
+#         dmsg(
+#             sample,
+#             "completed",
+#             msg={"file": str(sample.fq1.name), "cleaned": str(fq1)},
+#             json=use_json,
+#         )
+#         dmsg(
+#             sample,
+#             "completed",
+#             msg={"file": str(sample.fq2.name), "cleaned": str(fq2)},
+#             json=use_json,
+#         )
+#
+#
+# def submit_onp(sample, use_json, save_to_dir):
+#     cr = Decontamination(sample.fq1, sample=sample.name, outdir=save_to_dir)
+#     dmsg(sample, "started", msg={"file": str(sample.fq1.name)}, json=use_json)
+#     r = cr.result()
+#     if r == None:
+#         # derr(sample, cr.error)
+#         pass
+#     else:
+#         # single read run
+#         fq = r
+#         fqmd5, fqsha = validate.hash(fq)
+#         sample.add_se(
+#             fq, fqmd5, validation.batch,
+#         )
+#         dmsg(
+#             sample,
+#             "completed",
+#             msg={"file": str(sample.fq1.name), "cleaned": str(fq)},
+#             json=use_json,
+#         )
+
+
+if __name__ == "__main__":
+
+    args = parser.parse_args()
+
+    if args.command == "validate":
+        # validation stage
+        try:
+            samplesheet = Path(args.samplesheet)
+        except:
+            # emsg("missing-file", json=args.json)
+            exit(1)
+        try:
+            validss = gpas_uploader.Samplesheet(samplesheet)
+
+        except GpasError:
+            # report exceptions raised during validation
+            exit(1)
+
+        if len(validss.errors) == 0:
+            print(validss.samples.to_json(orient='records'))
+        else:
+            print(validss.errors.to_json(orient='records'))
+        sys.stdout.flush()
+
+ #    elif args.command == "decontaminate":
+ #        if not args.json:
+ #            raise NotImplementedError
+ #
+ #        validation = validate.Samplesheet(Path(args.samplesheet))
+ #        parent = Path(args.samplesheet).resolve().parent
+ #        outdir = Path(args.dir).resolve()
+ #
+ #        with open(validation.parent / "sample_names.csv", 'w') as snfd:
+ #            for sample in validation.samples:
+ # #               print(f"{sample.data['name']},{sample.name}", file=snfd)
+ #                print('{} , {}'.format(sample.data['name'], sample.name), file=snfd)
+ #                if sample.fq2:
+ #                    submit_illumina(sample, use_json=args.json, save_to_dir=outdir)
+ #                else:
+ #                    submit_onp(sample, use_json=args.json, save_to_dir=outdir)
+ #            print(json.dumps(validation.make_submission()))
+ #            sys.stdout.flush()
+ #    else:
+ #        exit(1)
