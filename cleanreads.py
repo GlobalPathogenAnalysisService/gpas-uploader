@@ -28,6 +28,7 @@ with subprocess.Popen(
         raise GpasError({"decontamination": "read removal tool error"})
 
 class Decontamination:
+
     process = None
     error = None
     fq1 = None
