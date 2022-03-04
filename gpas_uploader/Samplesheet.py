@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import shutil, json, subprocess, copy
+import shutil, json, subprocess, copy, pkg_resources
 from pathlib import Path
 import pandas
 import pandera
@@ -30,12 +30,26 @@ def locate_bam_binary():
     else:
         raise GpasError({"BAM conversion": "samtools not found"})
 
+def locate_riak_binary():
 
-def build_samples(row, platform):
+    # if there is a local riak use that one
+    # (as will be the case inside the Electron client)
+    if Path("./readItAndKeep").exists():
+        return Path("./readItAndKeep").resolve()
+
+    # or if there is one in the $PATH use that one
+    elif shutil.which('readItAndKeep') is not None:
+        return Path(shutil.which('readItAndKeep'))
+
+    else:
+        raise GpasError({"decontamination": "read removal tool not found"})
+
+
+def build_samples(row, platform, wd):
     if platform == 'Illumina':
-        return(json.dumps([row.fastq1,row.fastq2]))
+        return(json.dumps([str(wd / row.fastq1), str(wd / row.fastq2)]))
     elif platform == 'Nanopore':
-        return(json.dumps([row.fastq]))
+        return(json.dumps([str(wd / row.fastq)]))
     else:
         raise GpasError('sequencing platform not recognised')
 
@@ -106,6 +120,30 @@ def convert_bam_unpaired_reads(row, wd):
     # now that we have a FASTQ, add it to the dict
     return(stem + '.fastq.gz')
 
+def remove_pii_unpaired_reads(row, wd, outdir):
+
+    riak = locate_riak_binary()
+
+    ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+
+    stem = row['fastq'].split('.fastq.gz')[0]
+
+    process = subprocess.Popen(
+                [
+                    riak,
+                    "--enumerate_names",
+                    "--ref_fasta",
+                    ref_genome,
+                    "--reads1",
+                    row.fastq,
+                    "--outprefix",
+                    outdir / sample,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+
 
 def check_files_exist(row, file_extension, wd):
     if not (wd / row[file_extension]).is_file():
@@ -145,32 +183,11 @@ class Samplesheet:
             bam_files = copy.deepcopy(self.df[['bam']])
             files_ok, err = check_files_exist2(bam_files, 'bam', self.wd)
 
-            # only if they do
             if files_ok:
-
-                # validate the upload CSV
-                try:
-                    gpas_uploader_validate.BAMCheckSchema.validate(self.df, lazy=True)
-                except pandera.errors.SchemaErrors as err:
-                    self.errors = self.errors.append(build_errors(err))
-
-                # run samtools to produce paired/unpaired reads depending on the technology
-                if self.df.instrument_platform.unique()[0] == 'Illumina':
-
-                    self.df[['fastq1', 'fastq2']] = self.df.apply(convert_bam_paired_reads, args=(self.wd,), axis=1)
-
-                elif self.df.instrument_platform.unique()[0] == 'Nanopore':
-
-                    self.df['fastq'] = self.df.apply(convert_bam_unpaired_reads, args=(self.wd,), axis=1)
-
-                # now that we've added fastq column(s) we need to remove the bam column
-                # so that the DataFrame doesn't fail validation
-                self.df.drop(columns='bam', inplace=True)
-
+                self.convert_bams()
             # if the files don't exist, add to the errors DataFrame
             else:
                 self.errors = self.errors.append(err)
-
 
         if 'fastq' in self.df.columns:
             self.sequencing_platform = 'Nanopore'
@@ -189,6 +206,30 @@ class Samplesheet:
                 self.errors = self.errors.append(build_errors(err))
 
         if len(self.errors) == 0:
-            files = self.df.apply(build_samples,args=(self.sequencing_platform,), axis=1)
+            files = self.df.apply(build_samples,args=(self.sequencing_platform,self.wd), axis=1)
             self.samples = pandas.DataFrame(files, columns=['files'])
             self.samples.reset_index(inplace=True)
+
+    def convert_bams(self):
+
+        # validate the upload CSV
+        try:
+            gpas_uploader_validate.BAMCheckSchema.validate(self.df, lazy=True)
+        except pandera.errors.SchemaErrors as err:
+            self.errors = self.errors.append(build_errors(err))
+
+        # run samtools to produce paired/unpaired reads depending on the technology
+        if self.df.instrument_platform.unique()[0] == 'Illumina':
+
+            self.df[['fastq1', 'fastq2']] = self.df.apply(convert_bam_paired_reads, args=(self.wd,), axis=1)
+
+        elif self.df.instrument_platform.unique()[0] == 'Nanopore':
+
+            self.df['fastq'] = self.df.apply(convert_bam_unpaired_reads, args=(self.wd,), axis=1)
+
+        # now that we've added fastq column(s) we need to remove the bam column
+        # so that the DataFrame doesn't fail validation
+        self.df.drop(columns='bam', inplace=True)
+
+    def decontaminate(self):
+        pass
