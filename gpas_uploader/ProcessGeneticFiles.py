@@ -112,6 +112,7 @@ def remove_pii_unpaired_reads(row, wd, outdir):
     process = subprocess.Popen(
                 [
                     riak,
+                    "--tech ont",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
@@ -148,6 +149,7 @@ def remove_pii_paired_reads(row, wd, outdir):
     process = subprocess.Popen(
                 [
                     riak,
+                    "--tech illumina",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
