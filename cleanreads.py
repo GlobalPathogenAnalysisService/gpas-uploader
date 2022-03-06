@@ -50,10 +50,11 @@ class Decontamination:
                 raise GpasError()
             self.fq1 = Path(outdir) / f"{sample}.reads_1.fastq.gz"
             self.fq2 = Path(outdir) / f"{sample}.reads_2.fastq.gz"
-            # paired run
+            # paired end, assume Illumina
             self.process = subprocess.Popen(
                 [
                     riak,
+                    "--tech illumina",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
@@ -68,11 +69,12 @@ class Decontamination:
                 stderr=subprocess.PIPE,
             )
         else:
-            # single end
+            # single end, assume Nanopore
             self.fq1 = Path(outdir) / f"{sample}.reads.fastq.gz"
             self.process = subprocess.Popen(
                 [
                     riak,
+                    "--tech ont",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
