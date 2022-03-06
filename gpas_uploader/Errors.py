@@ -18,10 +18,10 @@ def smsg(samples, json=False, file=sys.stdout):
         file.flush()
 
 
-def dmsg(sample, error, msg=None, json=False, file=sys.stdout):
+def dmsg(sample_name, error, msg=None, json=False, file=sys.stdout):
     if not msg:
         msg = {}
-    payload = {"sample": sample.name, "status": error}
+    payload = {"sample": sample_name, "status": error}
     for k in msg:
         payload[k] = msg[k]
 
