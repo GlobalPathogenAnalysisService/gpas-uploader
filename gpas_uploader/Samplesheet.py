@@ -75,12 +75,12 @@ def check_files_exist2(df, file_extension, wd):
 
 class Samplesheet:
 
-    def __init__(self, upload_csv, parallel=False):
+    def __init__(self, upload_csv, run_parallel=False):
 
         # record some
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
-        self.parallel = parallel
+        self.run_parallel = run_parallel
         self.gpas_batch = gpas_uploader.create_batch_name(self.upload_csv)
 
         self.errors = pandas.DataFrame(None, columns=['gpas_name', 'error'])
@@ -145,8 +145,6 @@ class Samplesheet:
 
         if len(self.errors) == 0:
 
-            self.validates = True
-
             samples = []
             for idx,row in self.df.iterrows():
                 if self.sequencing_platform == 'Illumina':
@@ -154,25 +152,27 @@ class Samplesheet:
                 else:
                     samples.append({"sample": idx, "files": [row.fastq]})
 
-            return {"validation": {"status": "completed", "samples": samples}}
+            self.validation_json = {"validation": {"status": "completed", "samples": samples}}
+
+            return True
 
         else:
-
-            self.validates = False
 
             errors = []
             for idx,row in self.errors.iterrows():
                 errors.append({"sample": idx, "error": row.error})
                 #, "detailed_description": row.check})
 
-            return {"validation": {"status": "failure", "samples": errors}}
+            self.validation_json = {"validation": {"status": "failure", "samples": errors}}
+
+            return False
 
     def _convert_bams(self):
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
-        if platform.system() == 'Windows' or self.parallel is False:
+        if platform.system() == 'Windows' or self.run_parallel is False:
 
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
@@ -202,12 +202,10 @@ class Samplesheet:
 
     def decontaminate(self, outdir='/tmp'):
 
-        assert self.validates, 'upload CSV must validate before decontamination can occur'
-
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
-        if platform == 'Windows' or self.parallel is False:
+        if platform == 'Windows' or self.run_parallel is False:
 
             if self.sequencing_platform == 'Nanopore':
                 self.df['r_uri'] = self.df.apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir,), axis=1)

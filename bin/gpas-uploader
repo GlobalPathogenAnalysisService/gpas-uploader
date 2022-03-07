@@ -11,7 +11,6 @@ import sys
 import gpas_uploader
 
 parser = argparse.ArgumentParser(description="GPAS sequencing data upload tool")
-parser.add_argument("--json", action="store_true", default=False)
 parser.add_argument("--parallel", action="store_true", default=False)
 subparsers = parser.add_subparsers(dest="command")
 
@@ -30,16 +29,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not args.json:
-        raise NotImplementedError
-
     if args.command == "validate":
 
         samplesheet = Path(args.samplesheet)
 
-        upload_csv = gpas_uploader.Samplesheet(samplesheet, parallel=args.parallel)
+        upload_csv = gpas_uploader.Samplesheet(samplesheet, run_parallel=args.parallel)
 
-        print(upload_csv.validate())
+        upload_csv.validate()
+
+        print(upload_csv.validation_json)
 
         sys.stdout.flush()
 
@@ -47,7 +45,7 @@ if __name__ == "__main__":
 
         samplesheet = Path(args.samplesheet)
 
-        upload_csv = gpas_uploader.Samplesheet(samplesheet, parallel=args.parallel)
+        upload_csv = gpas_uploader.Samplesheet(samplesheet, run_parallel=args.parallel)
 
         upload_csv.validate()
 
