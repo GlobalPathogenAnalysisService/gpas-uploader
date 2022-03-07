@@ -15,6 +15,7 @@ setup(
     install_requires=[
         'pandas',
         'pandera',
+        'pandarallel',
         'gpas_uploader_validate'
         ],
     scripts=['bin/gpas-uploader'],
@@ -22,6 +23,6 @@ setup(
     license = 'MIT',
     python_requires='>=3.7',
     package_data={'': ['data/*']},
-    include_package_data=True,    
+    include_package_data=True,
     zip_safe=False
     )

@@ -1,5 +1,6 @@
 pandas
 pandera
+pandarallel
 pytest
 pytest-cov
 pytest-github-actions-annotate-failures
