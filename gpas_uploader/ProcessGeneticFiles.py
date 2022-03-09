@@ -111,7 +111,8 @@ def remove_pii_unpaired_reads(row, wd, outdir):
 
     riak_command = [
         riak,
-        "--tech ont",
+        "--tech",
+        "ont",
         "--enumerate_names",
         "--ref_fasta",
         ref_genome,
@@ -120,8 +121,6 @@ def remove_pii_unpaired_reads(row, wd, outdir):
         "--outprefix",
         outdir / row.index,
     ]
-
-    print(riak_command)
 
     process = subprocess.Popen(
                 riak_command,
@@ -152,7 +151,8 @@ def remove_pii_paired_reads(row, wd, outdir):
 
     riak_command = [
         riak,
-        "--tech illumina",
+        "--tech",
+        "illumina",
         "--enumerate_names",
         "--ref_fasta",
         ref_genome,
@@ -163,10 +163,6 @@ def remove_pii_paired_reads(row, wd, outdir):
         "--outprefix",
         outdir + '/' + str(row.name),
     ]
-    line = ''
-    for i in riak_command:
-        line += str(i) + ' '
-    print(line)
 
     process = subprocess.Popen(
                 riak_command,
@@ -177,9 +173,8 @@ def remove_pii_paired_reads(row, wd, outdir):
     # wait for it to finish otherwise the file will not be present
     process.wait()
 
-    print(process.returncode)
     # successful completion
-    # assert process.returncode == 0, 'riak command failed'
+    assert process.returncode == 0, 'riak command failed'
 
     fq1 = outdir + '/' + f"{row.name}.reads_1.fastq.gz"
     fq2 = outdir + '/' + f"{row.name}.reads_2.fastq.gz"
