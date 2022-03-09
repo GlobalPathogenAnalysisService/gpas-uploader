@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from .Samplesheet import *
+from .Batch import *
 from .Errors import *
 from .GpasIdentifiers import *
 from .ProcessGeneticFiles import *

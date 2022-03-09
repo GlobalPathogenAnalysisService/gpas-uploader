@@ -6,17 +6,17 @@ import subprocess
 # def test_spreadsheet_validation_correctly_fails():
 #
 #     with pytest.raises(Exception) as e_info:
-#         validate.Samplesheet('examples/none-existent-file.csv')
+#         validate.Batch('examples/none-existent-file.csv')
 #
 #     # forgot file extension
 #     with pytest.raises(Exception) as e_info:
-#         validate.Samplesheet('examples/illumina-samplesheet-template-good')
+#         validate.Batch('examples/illumina-samplesheet-template-good')
 #
 # def test_validate_illumina_spreadsheet():
 #
 #     samplesheet = pathlib.Path('examples/illumina-samplesheet-template-good.csv')
 #
-#     validss = validate.Samplesheet(samplesheet)
+#     validss = validate.Batch(samplesheet)
 #
 #     assert validss.validate()['validation']['status'] == 'completed'
 #
@@ -28,7 +28,7 @@ import subprocess
 #
 #     samplesheet = pathlib.Path(tmp_path / 'test-nanopore.csv')
 #
-#     validss = validate.Samplesheet(samplesheet)
+#     validss = validate.Batch(samplesheet)
 #
 #     assert validss.validate()['validation']['status'] == 'completed'
 #
@@ -36,7 +36,7 @@ import subprocess
 #
 #     samplesheet = pathlib.Path('examples/nanopore-samplesheet-template-good.csv')
 #
-#     validss = validate.Samplesheet(samplesheet)
+#     validss = validate.Batch(samplesheet)
 #
 #     assert validss.validate()['validation']['status'] == 'completed'
 #
@@ -48,7 +48,7 @@ import subprocess
 #
 #     samplesheet = pathlib.Path(tmp_path / 'test-illumina.csv')
 #
-#     validss = validate.Samplesheet(samplesheet)
+#     validss = validate.Batch(samplesheet)
 #
 #     assert validss.validate()['validation']['status'] == 'completed'
 #

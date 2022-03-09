@@ -39,8 +39,8 @@ def build_errors(err):
 
     failures = err.failure_cases
     failures.rename(columns={'index':'gpas_name'}, inplace=True)
-    failures['error'] = failures.apply(format_error, axis=1)
-    return(failures[['gpas_name', 'error']])
+    failures['error_message'] = failures.apply(format_error, axis=1)
+    return(failures[['gpas_name', 'error_message']])
 
 
 def format_error(row):
@@ -71,6 +71,9 @@ def format_error(row):
             return(row.column + ' cannot be in the future')
         if row.check[:7] == 'greater':
             return(row.column + ' cannot be before 2019-01-01')
+    elif row.column in ['fastq1', 'fastq2', 'fastq']:
+        if row.check == 'field_uniqueness':
+            return(row.column + ' must be unique in the upload CSV')
     elif row.check[:11] == 'str_matches':
         allowed_chars = row.check.split('[')[1].split(']')[0]
         return row.column + ' can only contain characters (' + allowed_chars + ')'
@@ -86,49 +89,69 @@ def check_files_exist(row, file_extension, wd):
 
 
 def check_files_exist2(df, file_extension, wd):
-    df['error'] = df.apply(check_files_exist, args=(file_extension, wd,), axis=1)
-    result = df[df.error.notna()]
+    df['error_message'] = df.apply(check_files_exist, args=(file_extension, wd,), axis=1)
+    result = df[df.error_message.notna()]
     if result.empty:
         return(True, None)
     else:
-        err = pandas.DataFrame(result.error, columns=['error'])
+        err = pandas.DataFrame(result.error_message, columns=['error_message'])
         err.reset_index(inplace=True)
         err.rename(columns={'name': 'sample'}, inplace=True)
         return(False, err)
 
 
-class Samplesheet:
+class Batch:
+    """
+    Batch of FASTQ/BAM files for upload to GPAS
+
+    Parameters
+    ----------
+    upload_csv : filename
+        path to the upload CSV specifying the samples to be uploaded
+    run_parallel : bool
+        if True, use pandarallel to remove PII reads in parallel (default False)
+
+    The upload CSV file is stored internally as a pandas.Dataframe. If the upload CSV
+    file specifies BAM files these are first converted to FASTQ files using samtools.
+    The upload CSV is then validated using pandera.SchemaModels that are defined in
+    gpas_uploader_validate. Any errors are stored in the instance variable errors.
+
+    Example
+    -------
+    >>> a = Batch('examples/illumina-upload-csv-pass.csv')
+    >>> len(a.df)
+    3
+    >>> len(a.errors)
+    0
+
+    """
 
     def __init__(self, upload_csv, run_parallel=False):
 
-        # record some
+        # instance variables
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
         self.run_parallel = run_parallel
-        self.gpas_batch = gpas_uploader.create_batch_name(self.upload_csv)
+        self.errors = pandas.DataFrame(None, columns=['gpas_name', 'error_message'])
 
-        self.errors = pandas.DataFrame(None, columns=['gpas_name', 'error'])
-
+        # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
-        # self.df.set_index('name', inplace=True)
 
+        # determine how many
         self.run_numbers = list(self.df.run_number.unique())
         self.run_number_lookup = {}
         for i in range(len(self.run_numbers)):
             self.run_number_lookup[self.run_numbers[i]] = i
 
+        # create the assumed unique GPAS batch id
+        self.gpas_batch = gpas_uploader.create_batch_name(self.upload_csv)
+
         self.df['gpas_batch'] = self.gpas_batch
         self.df[['gpas_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
         self.df.set_index('gpas_name', inplace=True)
 
-        # if the upload CSV contains BAMs, validate, then convert
+        # if the upload CSV contains BAMs, checl they exist, then convert
         if 'bam' in self.df.columns:
-
-            # validate the upload CSV
-            try:
-                gpas_uploader_validate.BAMCheckSchema.validate(self.df, lazy=True)
-            except pandera.errors.SchemaErrors as err:
-                self.errors = self.errors.append(build_errors(err))
 
             # check that the BAM files exist in the working directory
             bam_files = copy.deepcopy(self.df[['bam']])
@@ -139,6 +162,7 @@ class Samplesheet:
                 self._convert_bams()
 
             else:
+
                 # if the files don't exist, add to the errors DataFrame
                 self.errors = self.errors.append(err)
 
@@ -184,7 +208,7 @@ class Samplesheet:
 
             errors = []
             for idx,row in self.errors.iterrows():
-                errors.append({"sample": idx, "error": row.error})
+                errors.append({"sample": idx, "error": row.error_message})
                 #, "detailed_description": row.check})
 
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
