@@ -15,7 +15,8 @@ setup(
     install_requires=[
         'pandas',
         'pandera',
-        'pandarallel'
+        'pandarallel',
+        'pycountry'
         ],
     scripts=['bin/gpas-uploader'],
     packages = ['gpas_uploader'],

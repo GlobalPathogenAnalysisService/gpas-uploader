@@ -4,6 +4,8 @@ from .Batch import *
 from .Errors import *
 from .GpasIdentifiers import *
 from .ProcessGeneticFiles import *
+from .BaseCheckSchema import *
+from .UploadCheckSchema import *
 
 '''
 Use of semantic versioning, MAJOR.MINOR.MAINTAINANCE where

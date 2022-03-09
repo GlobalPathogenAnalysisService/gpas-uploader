@@ -25,14 +25,6 @@ jobs:
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
 
-    - name: Install gpas_uploader_validate
-      run: |
-        git clone https://github.com/GenomePathogenAnalysisService/gpas-uploader-validate
-        cd gpas-uploader-validate/
-        git checkout sprint9
-        python setup.py install --user
-        cd ..
-
     - name: Install samtools
       run: |
          wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
