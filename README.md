@@ -1,133 +1,49 @@
 # gpas-uploader
 
-Sequencing data upload client for GPAS users
+Sequencing data upload client for GPAS users.
 
-The global `--json` flag will translate output to JSON.
+This is a quick update to the README -- it will be expanded more shortly. 
 
-## validate metadata
+Philip Fowler, 9 Mar 2022
 
-`gpas-uploader --json import submission.xls`
+## validate the upload CSV
 
-Will return a validated JSON object to stderr:
-
-```
-{'submission': {'batch': 'submission.xls',
-    'samples': [{'sample': {'name': 'sample1.fq', 'instrument': 'Illumina', ...}
-                           {'name': 'sample2.fq', 'instrument': 'Illumina', ...}
-                           {'name': 'sample3.fq', 'instrument': 'Illumina', ...}
-}]}}
-}
-```
-
-## find fastq files, prepare submission
-
-This will validate the samplesheet and prepare a submission job by locating files in the CWD.
-
-`gpas-uploader --json import submission.xls --dir . > submission.json`
-
-This will output a submission JSON object:
+Will return a validated JSON object to STDOUT:
 
 ```
-{
-}
+$ gpas-upload validate examples/illumina-fastq-upload.csv
+{'validation': {'status': 'completed', 'samples': [{'sample': 'a26cbce9-d25e-4faf-9a24-162e989246f0', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': '824dbb06-0db4-4b74-afa8-3950ca44c66f', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '35c4f7b8-0148-4996-8fc8-2fc373f24885', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
 ```
 
-Additionally, program status will be written to stderr.
+If the upload CSV specifies BAM files, then they will be converted to FASTQ files using `samtools` in the background e.g.
 
 ```
-{'error': 'missing file:'}
+$ gpas-upload validate examples/illumina-bam-upload.csv
 ```
-
-## Read removal errors
-
-The core of the `gpas-uploader` read preprocessing is done by an external decontamination tool. Currently 4 distinct error modes are identified and propagated back to the electron client:
-
-The read removal status updated when the process is started, fails, or completes:
+Nanopore upload CSVs behave similarly. Here is one which fails validation for lots of reasons.
 
 ```
-{'decontamination': {'row': 0, 'status': 'started'}}
-...
-{'decontamination': {'row': 1, 'status': 'failure'}}
-...
-{'decontamination': {'row': 0, 'status': 'complete'}}
+$ gpas-upload validate tests/files/nanopore-bam-upload-csv-fail-1.csv
+{'validation': {'status': 'failure', 'samples': [{'sample': '249eb54b-9e05-4c08-9816-3c4e3851d263', 'error': 'batch can only contain characters (A-Za-z0-9._-)'}, {'sample': '249eb54b-9e05-4c08-9816-3c4e3851d263', 'error': 'neg in the control field is not valid: field must be either empty or contain the one of the keywords positive or negative'}, {'sample': 'bf0e9317-f9bd-4fe2-8740-0b6cc9749cbb', 'error': 'collection_date cannot be before 2019-01-01'}, {'sample': '249eb54b-9e05-4c08-9816-3c4e3851d263', 'error': 'collection_date cannot be in the future'}, {'sample': None, 'error': 'collection_date must be in form YYYY-MM-DD and cannot include the time'}, {'sample': '744a615b-8233-4814-aa83-47ef1323948d', 'error': 'FR is not a valid ISO-3166-1 country'}, {'sample': '744a615b-8233-4814-aa83-47ef1323948d', 'error': 'Finistere is not a valid ISO-3166-2 region for the specified country'}, {'sample': '744a615b-8233-4814-aa83-47ef1323948d', 'error': 'tags can only contain characters (A-Za-z0-9:_-)'}, {'sample': 'bf0e9317-f9bd-4fe2-8740-0b6cc9749cbb', 'error': 'host can only contain the keyword human'}, {'sample': 'bf0e9317-f9bd-4fe2-8740-0b6cc9749cbb', 'error': 'specimen_organism can only contain the keyword SARS-CoV-2'}, {'sample': '249eb54b-9e05-4c08-9816-3c4e3851d263', 'error': 'primer_scheme can only contain the keyword auto'}, {'sample': 'bf0e9317-f9bd-4fe2-8740-0b6cc9749cbb', 'error': 'instrument_platform can only contain one of the keywords Illumina or Nanopore'}, {'sample': None, 'error': 'instrument_platform must be unique'}]}}
 ```
 
-### File doesn't exist
+## decontaminate the upload CSV
+
+Assuming the above is ok and does not return errors you can then ask for the files to be decontaminated.
 
 ```
-{'decontamination': {'row': 0, 'error': 'file missing'}}
+$ gpas-upload decontaminate examples/illumina-fastq-upload.csv
+{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_1.fastq.gz", "cleaned": "/private/tmp/sample1.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_2.fastq.gz", "cleaned": "/private/tmp/sample1.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_1.fastq.gz", "cleaned": "/private/tmp/sample2.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_2.fastq.gz", "cleaned": "/private/tmp/sample2.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_1.fastq.gz", "cleaned": "/private/tmp/sample3.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_2.fastq.gz", "cleaned": "/private/tmp/sample3.reads_2.fastq.gz"}}
+{'submission': {'batch': {'file_name': 'B-8R39222', 'uploaded_on': '2022-03-09T16:27:17.292Z+00:00', 'run_numbers': [0, 1], 'samples': [{'sample': '519fb1ba-b820-445a-a174-83330003022e', 'run_number': 0, 'tags': ['site0', 'repeat'], 'control': 'negative', 'collection_date': '2022-02-01', 'country': 'USA', 'region': 'Texas', 'district': '1124', 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/sample1.reads_1.fastq.gz', 'r1_md5': 'dfe7965a73125aabda857983bac275e3', 'r2_uri': '/private/tmp/sample1.reads_2.fastq.gz', 'r2_md5': '97526116469c99ddda3aff96f2e2cd40'}}, {'sample': '22fa2ad7-9320-4040-b186-2ec6bbb704ea', 'run_number': 1, 'tags': ['site0'], 'control': nan, 'collection_date': '2022-03-01', 'country': 'FRA', 'region': 'Finistère', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/sample2.reads_1.fastq.gz', 'r1_md5': 'dfe7965a73125aabda857983bac275e3', 'r2_uri': '/private/tmp/sample2.reads_2.fastq.gz', 'r2_md5': '97526116469c99ddda3aff96f2e2cd40'}}, {'sample': '921148c9-e9d0-4039-ad60-9afefd8ec72e', 'run_number': 1, 'tags': ['site0'], 'control': 'positive', 'collection_date': '2022-03-08', 'country': 'GBR', 'region': 'Oxfordshire', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/sample3.reads_1.fastq.gz', 'r1_md5': 'dfe7965a73125aabda857983bac275e3', 'r2_uri': '/private/tmp/sample3.reads_2.fastq.gz', 'r2_md5': '97526116469c99ddda3aff96f2e2cd40'}}]}}}
 ```
-where `row` corresponds to the sample's entry in the samplesheet.
-
-### File is not valid fastq
-
-```
-{'decontamination': {'row': 0, 'error': 'invalid fastq', description: '...'}}
-```
-This error comes with an optional description field containing the stderr output from the read removal process.
-
-### Output directory not writable
-
-```
-{'decontamination': {'row': 0, 'error': 'output unwritable'}}
-```
-For cases where output fails to write (full disk, etc)
-
-### Read removal terminated
-```
-{'decontamination': {'row': 0, 'error': 'process terminated'}}
-```
-
-## begin submission
-
-`gpas-uploader --json upload submission.json`
-
-### register upload
-
-`gpas-uploader --json import submission.xls --dir .`
-
-`gpas-uploader` will contact the server to test for duplicate submissions with the original file's hash and receive preauthenticated upload requests.
-
-Valid samples are registered in the GPAS database.  file hashes and file names are added to the Read tables. The status is set to `PENDING`.
-
-The client recieves an upload 'ticket'; an augmented submission JSON object with pre-auth upload links:
-
-```
-{'submission': {'batch': 'submission.xls',
-    'samples': [{'sample': 'name': 'sample1',
-                            'original_shasum': 'acdfcdcaf',
-                            'PAR': 'asdf'}]}}
-```
-
-### decontaminate reads
-
-Input files undergo decontamination on the client side to keep PII off the wire.
-
-Decontamination is performed incrementally per file. As samples complete they're logged on stderr (optionally as JSON) to allow a wrapping program to report progress.
-
-```
-"original_fastq1": "foo_1.fq.gz",
-"original_fastq2": "foo_2.fq.gz",
-"decontam_fastq1": "decontam_1.fq.gz",
-"decontam_fastq2": "decontam_2.fq.gz",
-"... one for each files above sha256": "abcdefgh123455",
-"read_counts": {
-    "total_original": 100000,
-    "after_decontam":  99990,
-    "...?", ...
-}
-"success": true,
-"error_messages": none,
-"deconaminator_version": "1.1.2",
-"genomes_used": {"keep": ["foo"], "remove", ["bar"]},
-```
-
-Successfully decontaminated samples are queued for upload through HTTP POST.
-
-Hashes of decontaminated files are preserved to allow resumption.
-
-## resuming an upload
-
-`gpas-uploaded --json upload submission.json --resume`
-
-with the `--resume` flag duplicate filename and hashes for a dataset name are not treated as an error. Matching hashes are skipped and mismatched or missing hashes are treated as missing.
