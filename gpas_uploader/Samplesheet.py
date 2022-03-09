@@ -44,14 +44,38 @@ def build_errors(err):
 
 
 def format_error(row):
+
     if row.check == 'column_in_schema':
         return('unexpected column ' + row.failure_case + ' found in upload CSV')
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
+    elif row.column == 'region' and row.check[:4] == 'isin':
+        return(row.failure_case + " is not a valid ISO-3166-2 region for the specified country")
     elif row.column == 'control' and row.check[:4] == 'isin':
-        return(row.failure_case + ' in the control field is not valid: field must be either empty or contain the keywords positive or negative')
-    else:
-        return("problem in "+ row.column + ' field')
+        return(row.failure_case + ' in the control field is not valid: field must be either empty or contain the one of the keywords positive or negative')
+    elif row.column == 'host' and row.check[:4] == 'isin':
+        return(row.column + ' can only contain the keyword human')
+    elif row.column == 'specimen_organism' and row.check[:4] == 'isin':
+        return(row.column + ' can only contain the keyword SARS-CoV-2')
+    elif row.column == 'primer_scheme' and row.check[:4] == 'isin':
+        return(row.column + ' can only contain the keyword auto')
+    elif row.column == 'instrument_platform':
+        if row.gpas_name is None:
+            return(row.column + ' must be unique')
+        if row.check[:4] == 'isin':
+            return(row.column + ' can only contain one of the keywords Illumina or Nanopore')
+    elif row.column == 'collection_date':
+        if row.gpas_name is None:
+            return(row.column + ' must be in form YYYY-MM-DD and cannot include the time')
+        if row.check[:4] == 'less':
+            return(row.column + ' cannot be in the future')
+        if row.check[:7] == 'greater':
+            return(row.column + ' cannot be before 2019-01-01')
+    elif row.check[:11] == 'str_matches':
+        allowed_chars = row.check.split('[')[1].split(']')[0]
+        return row.column + ' can only contain characters (' + allowed_chars + ')'
+
+    return("problem in "+ row.column + ' field')
 
 
 def check_files_exist(row, file_extension, wd):

@@ -14,12 +14,18 @@ def test_nanopore_bam_check_passes():
     assert a.valid()
 
 
-def test_bam_check_fails():
+def test_illumina_bam_check_fails_1():
 
     a = gpas_uploader.Samplesheet('tests/files/illumina-bam-upload-csv-fail-1.csv')
     assert len(a.errors) == 2
     assert not a.valid()
 
+
+def test_nanopore_bam_check_fails_1():
+
+    a = gpas_uploader.Samplesheet('tests/files/illumina-bam-upload-csv-fail-1.csv')
+    assert len(a.errors) == 2
+    assert not a.valid()
 
 
 
