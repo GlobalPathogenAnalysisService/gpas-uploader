@@ -36,8 +36,8 @@ class BaseCheckSchema(pandera.SchemaModel):
     run_number: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
                                         nullable=True, coerce=True)
 
-    # validate (sample) name is alphanumeric and insist it is unique
-    name: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
+    # validate sample name is alphanumeric and insist it is unique
+    sample: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
                                      unique=True, coerce=True)
 
     # insist that control is one of positive, negative or null
@@ -73,11 +73,11 @@ class BaseCheckSchema(pandera.SchemaModel):
     # insist that instrument_platform can only be Illumina or Nanopore
     instrument_platform: Series[str] = pandera.Field(isin=['Illumina', 'Nanopore'], coerce=True )
 
-    gpas_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
-
     gpas_batch: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
+
+    gpas_sample: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # custom method that checks that the collection_date is only the date and does not include the time
     # e.g. "2022-03-01" will pass but "2022-03-01 10:20:32" will fail
