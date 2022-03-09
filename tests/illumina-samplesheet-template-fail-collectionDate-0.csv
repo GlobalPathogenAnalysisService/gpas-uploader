@@ -1,2 +1,0 @@
-name,fastq1,fastq2,organisation,tags,specimenOrganism,host,collectionDate,country,submissionTitle,submissionDescription,instrument_platform,instrument_model,flowcell
-MN908947,MN908947_1.fastq.gz,MN908947_2.fastq.gz,my org,negative control:site0:repeat,SARS-CoV-2,human,2000-16-01,United Kingdom,covid study,study of covid,Illumina,MiSeq,96
