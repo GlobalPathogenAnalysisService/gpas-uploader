@@ -132,11 +132,11 @@ class Samplesheet:
             try:
                 gpas_uploader_validate.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
+                print(err)
                 self.errors = self.errors.append(build_errors(err))
 
         self.errors.set_index('gpas_name', inplace=True)
 
-        # if len(self.errors) == 0:
         self.df.reset_index(inplace=True)
         self.df.set_index('gpas_name', inplace=True)
 
