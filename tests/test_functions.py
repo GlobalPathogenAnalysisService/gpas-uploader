@@ -52,57 +52,57 @@ import subprocess
 #
 #     assert validss.validate()['validation']['status'] == 'completed'
 #
-# def test_riak_ok(tmp_path):
-#
-#     if pathlib.Path("./readItAndKeep").exists():
-#         riak = pathlib.Path("./readItAndKeep").resolve()
-#
-#     # or if there is one in the $PATH use that one
-#     elif shutil.which('readItAndKeep') is not None:
-#         riak = pathlib.Path(shutil.which('readItAndKeep'))
-#
-#     process = subprocess.Popen(
-#         [
-#             riak,
-#             '--ref_fasta',
-#             'examples/MN908947.fasta',
-#             '--reads1',
-#             'examples/MN908947_1.fastq.gz',
-#             '--outprefix',
-#             tmp_path / pathlib.Path('foo')
-#         ],
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.PIPE,
-#     )
-#
-#     stdout, stderr = process.communicate()
-#
-#     # insist that the above command did not fail
-#     assert process.returncode == 0
-#
-# def test_samtools_ok(tmp_path):
-#
-#     if pathlib.Path("./samtools").exists():
-#         samtools = pathlib.Path("./samtools").resolve()
-#
-#     # or if there is one in the $PATH use that one
-#     elif shutil.which('samtools') is not None:
-#         samtools = pathlib.Path(shutil.which('samtools'))
-#
-#     # assumes samtools is in the $PATH!
-#     process = subprocess.Popen(
-#         [
-#             samtools,
-#             'fastq',
-#             '-o',
-#             tmp_path / pathlib.Path('foo.fastq.gz'),
-#             'examples/reference.bam',
-#         ],
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.PIPE,
-#     )
-#
-#     stdout, stderr = process.communicate()
-#
-#     # insist that the above command did not fail
-#     assert process.returncode == 0
+def test_riak_ok(tmp_path):
+
+    if pathlib.Path("./readItAndKeep").exists():
+        riak = pathlib.Path("./readItAndKeep").resolve()
+
+    # or if there is one in the $PATH use that one
+    elif shutil.which('readItAndKeep') is not None:
+        riak = pathlib.Path(shutil.which('readItAndKeep'))
+
+    process = subprocess.Popen(
+        [
+            riak,
+            '--ref_fasta',
+            'examples/MN908947.fasta',
+            '--reads1',
+            'examples/MN908947_1.fastq.gz',
+            '--outprefix',
+            tmp_path / pathlib.Path('foo')
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    stdout, stderr = process.communicate()
+
+    # insist that the above command did not fail
+    assert process.returncode == 0
+
+def test_samtools_ok(tmp_path):
+
+    if pathlib.Path("./samtools").exists():
+        samtools = pathlib.Path("./samtools").resolve()
+
+    # or if there is one in the $PATH use that one
+    elif shutil.which('samtools') is not None:
+        samtools = pathlib.Path(shutil.which('samtools'))
+
+    # assumes samtools is in the $PATH!
+    process = subprocess.Popen(
+        [
+            samtools,
+            'fastq',
+            '-o',
+            tmp_path / pathlib.Path('foo.fastq.gz'),
+            'examples/reference.bam',
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    stdout, stderr = process.communicate()
+
+    # insist that the above command did not fail
+    assert process.returncode == 0

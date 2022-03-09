@@ -11,7 +11,6 @@ import pandas
 import pandera
 from pandarallel import pandarallel
 
-import gpas_uploader_validate
 import gpas_uploader
 
 def hash_paired_reads(row, wd):
@@ -158,8 +157,7 @@ class Batch:
 
     The upload CSV file is stored internally as a pandas.Dataframe. If the upload CSV
     file specifies BAM files these are first converted to FASTQ files using samtools.
-    The upload CSV is then validated using pandera.SchemaModels that are defined in
-    gpas_uploader_validate. Any errors are stored in the instance variable errors.
+    The upload CSV is then validated using pandera.SchemaModels. Any errors are stored in the instance variable errors.
 
     Example
     -------
@@ -214,7 +212,7 @@ class Batch:
             self.sequencing_platform = 'Nanopore'
 
             try:
-                gpas_uploader_validate.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
+                gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
                 self.errors = self.errors.append(build_errors(err))
 
@@ -222,7 +220,7 @@ class Batch:
             self.sequencing_platform = 'Illumina'
 
             try:
-                gpas_uploader_validate.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
+                gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
                 print(err)
                 self.errors = self.errors.append(build_errors(err))
