@@ -1,13 +1,19 @@
 import pytest, pathlib
 
-from cleanreads import Decontamination
-
 import gpas_uploader
+
+def test_illumina_bam_check_passes():
+
+    a = gpas_uploader.Samplesheet('tests/files/illumina-bam-upload-csv-pass-1.csv')
+    assert a.valid()
+
 
 def test_bam_check_fails():
 
-    a = gpas_uploader.Samplesheet('tests/bam-illumina-upload-csv-fail-0.csv')
+    a = gpas_uploader.Samplesheet('tests/files/illumina-bam-upload-csv-fail-1.csv')
     assert len(a.errors) == 2
+    assert not a.valid()
+
 
 
 

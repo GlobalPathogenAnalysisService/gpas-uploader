@@ -141,7 +141,7 @@ class Samplesheet:
         self.df.set_index('gpas_name', inplace=True)
 
 
-    def validate(self):
+    def valid(self):
 
         if len(self.errors) == 0:
 

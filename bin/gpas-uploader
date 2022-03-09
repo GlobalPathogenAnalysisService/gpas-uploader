@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
         upload_csv = gpas_uploader.Samplesheet(samplesheet, run_parallel=args.parallel)
 
-        upload_csv.validate()
+        upload_csv.valid()
 
         print(upload_csv.validation_json)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
         upload_csv = gpas_uploader.Samplesheet(samplesheet, run_parallel=args.parallel)
 
-        if upload_csv.validate():
+        if upload_csv.valid():
 
             parent = Path(args.samplesheet).resolve().parent
             outdir = Path(args.dir).resolve()
