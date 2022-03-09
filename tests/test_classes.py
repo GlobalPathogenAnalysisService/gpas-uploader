@@ -2,6 +2,11 @@ import pytest, pathlib
 
 import gpas_uploader
 
+def test_no_upload_csv_fails():
+
+    with pytest.raises(Exception) as e_info:
+        validate.Batch('tests/files/none-existent-file.csv')
+
 def test_illumina_bam_pass_1():
 
     a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv')

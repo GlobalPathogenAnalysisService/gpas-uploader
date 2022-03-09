@@ -20,12 +20,14 @@ def hash_paired_reads(row, wd):
 
     Parameters
     ----------
-    row: pandas.Series supplied by pandas.DataFrame.apply
-    wd: pathlib.Path of the working directory
+    row: pandas.Series
+        supplied by pandas.DataFrame.apply
+    wd: pathlib.Path
+        the working directory
 
     Returns
     -------
-        pandas.Series
+    pandas.Series
     """
     fq1md5, fq1sha = hash_fastq(wd / row.fastq1)
     fq2md5, fq2sha = hash_fastq(wd / row.fastq2)
@@ -44,8 +46,7 @@ def hash_unpaired_reads(row, wd):
 
     Returns
     -------
-        str: MD5 hash of FASTQ file
-        str: SHA hash of FASTQ file
+    pandas.Series
     """
     fqmd5, fqsha = hash_fastq(wd / row.fastq)
     return(pandas.Series([fqmd5, fqsha]))
@@ -56,12 +57,15 @@ def hash_fastq(filename):
 
     Parameters
     ---------
-        filename: pathlib.Path of the file to hash
+    filename: pathlib.Path
+        the file to hash
 
     Returns
     -------
-        str: MD5 hash of FASTQ file
-        str: SHA hash of FASTQ file
+    str
+        MD5 hash of FASTQ file
+    str
+        SHA hash of FASTQ file
     """
     md5 = hashlib.md5()
     sha = hashlib.sha256()
@@ -73,13 +77,15 @@ def hash_fastq(filename):
 
 
 def build_errors(err):
-    """
-    Parse the errors returned from the panderas class.
+    """Parse the errors returned from the panderas class.
 
     Parameters
     ----------
-    err
+    err: pandera.errors.SchemaErrors
 
+    Returns
+    -------
+    pandas.DataFrame(columns=['gpas_name', 'error_message'])
     """
     failures = err.failure_cases
     failures.rename(columns={'index':'gpas_name'}, inplace=True)
@@ -88,7 +94,13 @@ def build_errors(err):
 
 
 def format_error(row):
+    """Mong the panderas errors into more user-friendly error messages
 
+    Returns
+    -------
+    str
+        error message, defaults to 'problem in <field_name> field'
+    """
     if row.check == 'column_in_schema':
         return('unexpected column ' + row.failure_case + ' found in upload CSV')
     elif row.column == 'country' and row.check[:4] == 'isin':
@@ -126,13 +138,41 @@ def format_error(row):
 
 
 def check_files_exist(row, file_extension, wd):
+    """"Check if a genetic file exists.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row : pandas.Series
+    file_extension: str
+        the type of genetic file, one of fastq1, fastq2 or bam
+    wd: pathlib.Path
+        the working directory
+
+    Returns
+    -------
+    None or error message if file does not exist
+    """
     if not (wd / row[file_extension]).is_file():
         return(file_extension + ' does not exist')
     else:
         return(None)
 
 
-def check_files_exist2(df, file_extension, wd):
+def check_files_exist_in_df(df, file_extension, wd):
+    """Check if the genetic files specified in upload CSV exist.
+
+    Calls check_files_exist using the pandas.DataFrame.apply method
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+    file_extension: str
+        the type of genetic file, one of fastq1, fastq2 or bam
+    wd:
+
+    """
     df['error_message'] = df.apply(check_files_exist, args=(file_extension, wd,), axis=1)
     result = df[df.error_message.notna()]
     if result.empty:
@@ -168,7 +208,6 @@ class Batch:
     0
 
     """
-
     def __init__(self, upload_csv, run_parallel=False):
 
         # instance variables
@@ -197,7 +236,7 @@ class Batch:
 
             # check that the BAM files exist in the working directory
             bam_files = copy.deepcopy(self.df[['bam']])
-            files_ok, err = check_files_exist2(bam_files, 'bam', self.wd)
+            files_ok, err = check_files_exist_in_df(bam_files, 'bam', self.wd)
 
             if files_ok:
 
