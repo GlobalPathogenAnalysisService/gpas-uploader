@@ -8,6 +8,12 @@ def test_illumina_bam_check_passes():
     assert a.valid()
 
 
+def test_nanopore_bam_check_passes():
+
+    a = gpas_uploader.Samplesheet('tests/files/nanopore-bam-upload-csv-pass-1.csv')
+    assert a.valid()
+
+
 def test_bam_check_fails():
 
     a = gpas_uploader.Samplesheet('tests/files/illumina-bam-upload-csv-fail-1.csv')
