@@ -85,12 +85,12 @@ def build_errors(err):
 
     Returns
     -------
-    pandas.DataFrame(columns=['gpas_name', 'error_message'])
+    pandas.DataFrame(columns=['gpas_sample_name', 'error_message'])
     """
     failures = err.failure_cases
-    failures.rename(columns={'index':'gpas_name'}, inplace=True)
+    failures.rename(columns={'index':'gpas_sample_name'}, inplace=True)
     failures['error_message'] = failures.apply(format_error, axis=1)
-    return(failures[['gpas_name', 'error_message']])
+    return(failures[['gpas_sample_name', 'error_message']])
 
 
 def format_error(row):
@@ -116,12 +116,12 @@ def format_error(row):
     elif row.column == 'primer_scheme' and row.check[:4] == 'isin':
         return(row.column + ' can only contain the keyword auto')
     elif row.column == 'instrument_platform':
-        if row.gpas_name is None:
+        if row.gpas_sample_name is None:
             return(row.column + ' must be unique')
         if row.check[:4] == 'isin':
             return(row.column + ' can only contain one of the keywords Illumina or Nanopore')
     elif row.column == 'collection_date':
-        if row.gpas_name is None:
+        if row.gpas_sample_name is None:
             return(row.column + ' must be in form YYYY-MM-DD and cannot include the time')
         if row.check[:4] == 'less':
             return(row.column + ' cannot be in the future')
@@ -180,7 +180,7 @@ def check_files_exist_in_df(df, file_extension, wd):
     else:
         err = pandas.DataFrame(result.error_message, columns=['error_message'])
         err.reset_index(inplace=True)
-        err.rename(columns={'name': 'sample'}, inplace=True)
+        err.rename(columns={'name': 'sample_name'}, inplace=True)
         return(False, err)
 
 
@@ -213,7 +213,7 @@ class Batch:
         # instance variables
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
-        self.errors = pandas.DataFrame(None, columns=['gpas_name', 'error_message'])
+        self.errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
@@ -228,8 +228,8 @@ class Batch:
         self.gpas_batch = gpas_uploader.create_batch_name(self.upload_csv)
 
         self.df['gpas_batch'] = self.gpas_batch
-        self.df[['gpas_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
-        self.df.set_index('gpas_name', inplace=True)
+        self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
+        self.df.set_index('gpas_sample_name', inplace=True)
 
         # if the upload CSV contains BAMs, checl they exist, then convert
         if 'bam' in self.df.columns:
@@ -263,22 +263,14 @@ class Batch:
             except pandera.errors.SchemaErrors as err:
                 self.errors = self.errors.append(build_errors(err))
 
-        self.errors.set_index('gpas_name', inplace=True)
+        self.errors.set_index('gpas_sample_name', inplace=True)
 
         self.df.reset_index(inplace=True)
-        self.df.set_index('gpas_name', inplace=True)
+        self.df.set_index('gpas_sample_name', inplace=True)
 
-
-    def valid(self):
-        """Check if batch passes validation checks
-
-        Also prepares the JSON required for the GPAS Electron upload app.
-
-        Returns
-        -------
-            True if successful, False otherwise
-        """
         if len(self.errors) == 0:
+
+            self.valid = True
 
             samples = []
             for idx,row in self.df.iterrows():
@@ -289,9 +281,10 @@ class Batch:
 
             self.validation_json = {"validation": {"status": "completed", "samples": samples}}
 
-            return True
 
         else:
+
+            self.valid = False
 
             errors = []
             for idx,row in self.errors.iterrows():
@@ -299,8 +292,6 @@ class Batch:
                 #, "detailed_description": row.check})
 
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
-
-            return False
 
     def _convert_bams(self, run_parallel=False):
         """Private method that converts BAM files to FASTQ files.
@@ -386,7 +377,9 @@ class Batch:
         else:
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
 
-    def make_submission(self):
+        self.decontamination_json = self._make_submission()
+
+    def _make_submission(self):
         """Prepare the JSON payload for the GPAS Upload app
 
         Returns
@@ -396,11 +389,11 @@ class Batch:
 
         self.df.reset_index(inplace=True)
 
-        self.samples = copy.deepcopy(self.df[['batch', 'run_number', 'name', 'gpas_batch', 'gpas_run_number', 'gpas_name']])
+        self.sample_sheet = copy.deepcopy(self.df[['batch', 'run_number', 'sample_name', 'gpas_batch', 'gpas_run_number', 'gpas_sample_name']])
 
-        self.samples.rename(columns={'batch': 'local_batch', 'run_number': 'local_run', 'name': 'local_name'}, inplace=True)
+        self.sample_sheet.rename(columns={'batch': 'local_batch', 'run_number': 'local_run', 'sample_name': 'local_sample'}, inplace=True)
 
-        self.df.set_index('gpas_name', inplace=True)
+        self.df.set_index('gpas_sample_name', inplace=True)
 
         # determine the current time and time zone
         currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
@@ -409,7 +402,7 @@ class Batch:
 
         samples = []
         for idx,row in self.df.iterrows():
-            sample = {  "name": idx,
+            sample = {  "sample": idx,
                         "run_number": row.gpas_run_number,
                         "tags": row.tags.split(':'),
                         "control": row.control,

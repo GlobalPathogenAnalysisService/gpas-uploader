@@ -33,7 +33,7 @@ def create_batch_name(fn):
 
 def assign_gpas_identifiers(row, lookup):
 
-    gpas_name = str(uuid.uuid4())
+    gpas_sample_name = str(uuid.uuid4())
     gpas_run_number = lookup[row.run_number]
 
-    return pandas.Series([gpas_name, gpas_run_number])
+    return pandas.Series([gpas_sample_name, gpas_run_number])

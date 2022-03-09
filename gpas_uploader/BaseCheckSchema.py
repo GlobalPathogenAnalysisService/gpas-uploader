@@ -37,7 +37,7 @@ class BaseCheckSchema(pandera.SchemaModel):
                                         nullable=True, coerce=True)
 
     # validate sample name is alphanumeric and insist it is unique
-    sample: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
+    sample_name: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
                                      unique=True, coerce=True)
 
     # insist that control is one of positive, negative or null
@@ -77,7 +77,7 @@ class BaseCheckSchema(pandera.SchemaModel):
 
     gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
 
-    gpas_sample: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+    gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # custom method that checks that the collection_date is only the date and does not include the time
     # e.g. "2022-03-01" will pass but "2022-03-01 10:20:32" will fail
