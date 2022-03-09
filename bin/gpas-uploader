@@ -10,15 +10,15 @@ import sys
 
 import gpas_uploader
 
-parser = argparse.ArgumentParser(description="GPAS sequencing data upload tool")
+parser = argparse.ArgumentParser(description="GPAS batch upload tool")
 parser.add_argument("--parallel", action="store_true", default=False)
 subparsers = parser.add_subparsers(dest="command")
 
 validate_args = subparsers.add_parser(
-    "validate", help="parse and validate a samplesheet"
+    "validate", help="parse and validate an upload CSV"
 )
 validate_args.add_argument("samplesheet")
-validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
+# validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
 
 import_args = subparsers.add_parser("decontaminate")
 import_args.add_argument("--dir", default='/tmp/')

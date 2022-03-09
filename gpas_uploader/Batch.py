@@ -131,7 +131,6 @@ class Batch:
         # instance variables
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
-        self.run_parallel = run_parallel
         self.errors = pandas.DataFrame(None, columns=['gpas_name', 'error_message'])
 
         # store the upload CSV internally as a pandas.DataFrame
@@ -190,7 +189,14 @@ class Batch:
 
 
     def valid(self):
+        """Check if batch passes validation checks
 
+        Also prepares the JSON required for the GPAS Electron upload app.
+
+        Returns
+        -------
+            True if successful, False otherwise
+        """
         if len(self.errors) == 0:
 
             samples = []
@@ -215,12 +221,24 @@ class Batch:
 
             return False
 
-    def _convert_bams(self):
+    def _convert_bams(self, run_parallel=False):
+        """Private method that converts BAM files to FASTQ files.
+
+        Paired or unpaired FASTQ files are produced depending on the instrument_platform
+        specified in the upload CSV file. If run_parallel is True this uses pandarallel
+        to run samtools in parallel, except on Windows.
+
+        Parameters
+        ----------
+        run_parallel: bool
+            if True, run readItAndKeep in parallel using pandarallel (default False)
+
+        """
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
-        if platform.system() == 'Windows' or self.run_parallel is False:
+        if platform.system() == 'Windows' or run_parallel is False:
 
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
@@ -248,12 +266,22 @@ class Batch:
         # so that the DataFrame doesn't fail validation
         self.df.drop(columns='bam', inplace=True)
 
-    def decontaminate(self, outdir='/tmp'):
+    def decontaminate(self, run_parallel=False, outdir='/tmp'):
+        """Remove personally identifiable genetic reads from the FASTQ files in the batch.
+
+        Parameters
+        ----------
+        outdir : str
+            the folder where to write the decontaminated FASTQ files (Default is /tmp)
+        run_parallel: bool
+            if True, run readItAndKeep in parallel using pandarallel (default False)
+
+        """
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
-        if platform == 'Windows' or self.run_parallel is False:
+        if platform == 'Windows' or run_parallel is False:
 
             if self.sequencing_platform == 'Nanopore':
                 self.df['r_uri'] = self.df.apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir,), axis=1)
