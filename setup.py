@@ -15,8 +15,7 @@ setup(
     install_requires=[
         'pandas',
         'pandera',
-        'pandarallel',
-        'gpas_uploader_validate'
+        'pandarallel'
         ],
     scripts=['bin/gpas-uploader'],
     packages = ['gpas_uploader'],

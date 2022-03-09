@@ -15,20 +15,58 @@ import gpas_uploader_validate
 import gpas_uploader
 
 def hash_paired_reads(row, wd):
+    """Calculate the MD5 and SHA hashes for two FASTQ files containing paired reads.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row: pandas.Series supplied by pandas.DataFrame.apply
+    wd: pathlib.Path of the working directory
+
+    Returns
+    -------
+        pandas.Series
+    """
     fq1md5, fq1sha = hash_fastq(wd / row.fastq1)
     fq2md5, fq2sha = hash_fastq(wd / row.fastq2)
     return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
 
 
 def hash_unpaired_reads(row, wd):
+    """Calculate the MD5 and SHA hashes for a FASTQ file containing unpaired reads.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row: pandas.Series supplied by pandas.DataFrame.apply
+    wd: pathlib.Path of the working directory
+
+    Returns
+    -------
+        str: MD5 hash of FASTQ file
+        str: SHA hash of FASTQ file
+    """
     fqmd5, fqsha = hash_fastq(wd / row.fastq)
     return(pandas.Series([fqmd5, fqsha]))
 
 
-def hash_fastq(fn):
+def hash_fastq(filename):
+    """Calculate the MD5 and SHA hashes of a file.
+
+    Parameters
+    ---------
+        filename: pathlib.Path of the file to hash
+
+    Returns
+    -------
+        str: MD5 hash of FASTQ file
+        str: SHA hash of FASTQ file
+    """
     md5 = hashlib.md5()
     sha = hashlib.sha256()
-    with open(fn, "rb") as f:
+    with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             md5.update(chunk)
             sha.update(chunk)
@@ -36,7 +74,14 @@ def hash_fastq(fn):
 
 
 def build_errors(err):
+    """
+    Parse the errors returned from the panderas class.
 
+    Parameters
+    ----------
+    err
+
+    """
     failures = err.failure_cases
     failures.rename(columns={'index':'gpas_name'}, inplace=True)
     failures['error_message'] = failures.apply(format_error, axis=1)
@@ -232,7 +277,6 @@ class Batch:
         ----------
         run_parallel: bool
             if True, run readItAndKeep in parallel using pandarallel (default False)
-
         """
 
         # From https://github.com/nalepae/pandarallel
@@ -307,6 +351,12 @@ class Batch:
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
 
     def make_submission(self):
+        """Prepare the JSON payload for the GPAS Upload app
+
+        Returns
+        -------
+            dict : JSON payload to pass to GPAS Electron upload app via STDOUT
+        """
 
         self.df.reset_index(inplace=True)
 
