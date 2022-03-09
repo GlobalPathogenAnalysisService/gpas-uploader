@@ -232,8 +232,6 @@ class Samplesheet:
 
     def make_submission(self):
 
-        assert self.validates, 'upload CSV must validate before a submission can occur'
-
         self.df.reset_index(inplace=True)
 
         self.samples = copy.deepcopy(self.df[['batch', 'run_number', 'name', 'gpas_batch', 'gpas_run_number', 'gpas_name']])

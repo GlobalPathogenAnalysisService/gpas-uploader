@@ -5,6 +5,8 @@ __pycache__/
 *.ipynb
 .DS_Store
 
+sample_names.csv
+
 # C extensions
 *.so
 

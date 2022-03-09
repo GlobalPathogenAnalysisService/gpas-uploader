@@ -47,9 +47,7 @@ if __name__ == "__main__":
 
         upload_csv = gpas_uploader.Samplesheet(samplesheet, run_parallel=args.parallel)
 
-        upload_csv.validate()
-
-        if upload_csv.validates:
+        if upload_csv.validate():
 
             parent = Path(args.samplesheet).resolve().parent
             outdir = Path(args.dir).resolve()
@@ -58,6 +56,8 @@ if __name__ == "__main__":
             upload_csv.decontaminate()
 
             print(upload_csv.make_submission())
+
+            sys.stdout.flush()
 
             # save the local -> GPAS (batch,run,sample) information
             upload_csv.samples.to_csv(args.output_csv, index=False)
