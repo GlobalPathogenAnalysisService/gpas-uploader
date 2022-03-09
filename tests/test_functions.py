@@ -64,10 +64,12 @@ def test_riak_ok(tmp_path):
     process = subprocess.Popen(
         [
             riak,
+            "--tech",
+            "ont",
             '--ref_fasta',
-            'examples/MN908947.fasta',
+            'gpas_uploader/data/MN908947_no_polyA.fasta',
             '--reads1',
-            'examples/MN908947_1.fastq.gz',
+            'tests/files/sample1.fastq.gz',
             '--outprefix',
             tmp_path / pathlib.Path('foo')
         ],
@@ -96,7 +98,7 @@ def test_samtools_ok(tmp_path):
             'fastq',
             '-o',
             tmp_path / pathlib.Path('foo.fastq.gz'),
-            'examples/reference.bam',
+            'tests/files/sample1.bam',
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

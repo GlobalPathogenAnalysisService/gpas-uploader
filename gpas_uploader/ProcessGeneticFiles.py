@@ -11,11 +11,11 @@ import gpas_uploader
 def locate_bam_binary():
 
     if Path("./samtools").exists():
-        return Path("./samtools").resolve()
+        return str(Path("./samtools").resolve())
 
     # or if there is one in the $PATH use that one
     elif shutil.which('samtools') is not None:
-        return Path(shutil.which('samtools'))
+        return str(Path(shutil.which('samtools')))
 
     else:
         raise GpasError({"BAM conversion": "samtools not found"})
@@ -25,11 +25,11 @@ def locate_riak_binary():
     # if there is a local riak use that one
     # (as will be the case inside the Electron client)
     if Path("./readItAndKeep").exists():
-        return Path("./readItAndKeep").resolve()
+        return str(Path("./readItAndKeep").resolve())
 
     # or if there is one in the $PATH use that one
     elif shutil.which('readItAndKeep') is not None:
-        return Path(shutil.which('readItAndKeep'))
+        return str(Path(shutil.which('readItAndKeep')))
 
     else:
         raise GpasError({"decontamination": "read removal tool not found"})
@@ -117,9 +117,9 @@ def remove_pii_unpaired_reads(row, wd, outdir):
         "--ref_fasta",
         ref_genome,
         "--reads1",
-        row.fastq,
+        wd / Path(row.fastq),
         "--outprefix",
-        outdir / row.index,
+        str(outdir / row.sample_name),
     ]
 
     process = subprocess.Popen(
@@ -136,9 +136,9 @@ def remove_pii_unpaired_reads(row, wd, outdir):
 
     fq = outdir / f"{row.sample_name}.reads.fastq.gz"
 
-    gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": fq}, json=True)
+    gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
 
-    return(fq)
+    return(str(fq))
 
 def remove_pii_paired_reads(row, wd, outdir):
     gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq1)}, json=True)
@@ -160,7 +160,7 @@ def remove_pii_paired_reads(row, wd, outdir):
         "--reads2",
         wd / Path(row.fastq2),
         "--outprefix",
-        outdir / row.sample_name,
+        outdir / Path(row.sample_name),
     ]
 
     process = subprocess.Popen(
@@ -181,4 +181,4 @@ def remove_pii_paired_reads(row, wd, outdir):
     gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
     gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq2), 'cleaned': str(fq2)}, json=True)
 
-    return(pandas.Series([fq1, fq2]))
+    return(pandas.Series([str(fq1), str(fq2)]))

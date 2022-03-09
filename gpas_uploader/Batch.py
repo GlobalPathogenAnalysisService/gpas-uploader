@@ -225,7 +225,7 @@ class Batch:
             self.run_number_lookup[self.run_numbers[i]] = i
 
         # create the assumed unique GPAS batch id
-        self.gpas_batch = gpas_uploader.create_batch_name(self.upload_csv)
+        self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
 
         self.df['gpas_batch'] = self.gpas_batch
         self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
@@ -337,7 +337,7 @@ class Batch:
         # so that the DataFrame doesn't fail validation
         self.df.drop(columns='bam', inplace=True)
 
-    def decontaminate(self, run_parallel=False, outdir='/tmp'):
+    def decontaminate(self, run_parallel=False, outdir=Path('/tmp/')):
         """Remove personally identifiable genetic reads from the FASTQ files in the batch.
 
         Parameters
@@ -391,7 +391,7 @@ class Batch:
 
         self.sample_sheet = copy.deepcopy(self.df[['batch', 'run_number', 'sample_name', 'gpas_batch', 'gpas_run_number', 'gpas_sample_name']])
 
-        self.sample_sheet.rename(columns={'batch': 'local_batch', 'run_number': 'local_run', 'sample_name': 'local_sample'}, inplace=True)
+        self.sample_sheet.rename(columns={'batch': 'local_batch', 'run_number': 'local_run_number', 'sample_name': 'local_sample_name'}, inplace=True)
 
         self.df.set_index('gpas_sample_name', inplace=True)
 
