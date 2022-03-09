@@ -18,7 +18,6 @@ validate_args = subparsers.add_parser(
     "validate", help="parse and validate an upload CSV"
 )
 validate_args.add_argument("samplesheet")
-# validate_args.add_argument("--dir", default=None, help="override fastq file prefix")
 
 import_args = subparsers.add_parser("decontaminate")
 import_args.add_argument("--dir", default='/tmp/')

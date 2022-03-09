@@ -261,7 +261,6 @@ class Batch:
             try:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                print(err)
                 self.errors = self.errors.append(build_errors(err))
 
         self.errors.set_index('gpas_name', inplace=True)
