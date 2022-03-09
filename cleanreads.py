@@ -54,7 +54,8 @@ class Decontamination:
             self.process = subprocess.Popen(
                 [
                     riak,
-                    "--tech illumina",
+                    "--tech",
+                    "illumina",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
@@ -74,7 +75,8 @@ class Decontamination:
             self.process = subprocess.Popen(
                 [
                     riak,
-                    "--tech ont",
+                    "--tech",
+                    "ont",
                     "--enumerate_names",
                     "--ref_fasta",
                     ref_genome,
