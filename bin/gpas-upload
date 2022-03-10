@@ -4,7 +4,7 @@
 gpas-uploader script
 """
 
-import argparse
+import argparse, shutil
 from pathlib import Path
 import sys
 
@@ -55,6 +55,36 @@ if __name__ == "__main__":
             print(upload_csv.decontamination_json)
 
             sys.stdout.flush()
+
+            # to avoid overwriting a sample_names.csv, rename any existing
+            # file to sample_names.csv.001. If that also exists, instead rename
+            # to sample_names.csv.002, if that already exists sample_names.csv.003
+            # and so on
+
+            # if a sample_names.csv already exists
+            if Path(parent / args.output_csv).exists():
+
+                # find out how many backup files there are
+                backup_files = parent.glob(args.output_csv + '.*')
+
+                if len(list(backup_files)) == 0:
+
+                    shutil.move(parent / args.output_csv, str(parent / args.output_csv) + '.001')
+
+                else:
+
+                    backup_files = parent.glob(args.output_csv + '.*')
+
+                    # create a list of their numbers
+                    file_numbers = [ str(i).split(args.output_csv + '.')[1] for i in backup_files ]
+
+                    # what is the highest number?
+                    highest_value = int(max(file_numbers))
+
+                    # hence what is the new number?
+                    next_value = "%03i" % (highest_value+1)
+
+                    shutil.move(parent / args.output_csv, str(parent / args.output_csv) + '.' + next_value)
 
             # save the local -> GPAS (batch,run,sample) information
             upload_csv.sample_sheet.to_csv(parent / args.output_csv, index=False)
