@@ -45,7 +45,7 @@ def test_illumina_bam_files_donotexist():
     assert len(a.errors) == 1
 
     # which is that one of the bam files does not exist
-    assert list(a.errors.error_message) == ['bam does not exist']
+    assert list(a.errors.error_message) == ['sample4.bam is empty']
 
 
 def test_nanopore_bam_check_fails_1():

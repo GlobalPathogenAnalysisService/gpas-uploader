@@ -136,7 +136,10 @@ def format_error(row):
         allowed_chars = row.check.split('[')[1].split(']')[0]
         return row.column + ' can only contain characters (' + allowed_chars + ')'
 
-    return("problem in "+ row.column + ' field')
+    if row.column is None:
+        return("problem")
+    else:
+        return("problem in "+ row.column + ' field')
 
 
 def check_files_exist(row, file_extension, wd):
@@ -157,9 +160,12 @@ def check_files_exist(row, file_extension, wd):
     None or error message if file does not exist
     """
     if not (wd / row[file_extension]).is_file():
-        return(file_extension + ' does not exist')
+        return(row[file_extension] + ' does not exist')
     else:
-        return(None)
+        if (wd / row[file_extension]).stat().st_size == 0:
+            return(row[file_extension] + ' is empty')
+        else:
+            return(None)
 
 
 def check_files_exist_in_df(df, file_extension, wd):
@@ -249,6 +255,12 @@ class Batch:
         # paired or unpaired reads
         if 'fastq' in self.df.columns:
             self.sequencing_platform = 'Nanopore'
+
+            fastq_files = copy.deepcopy(self.df[['fastq']])
+            files_ok, err = check_files_exist_in_df(fastq_files, 'fastq', self.wd)
+            if not files_ok:
+                self.errors = self.errors.append(err)
+
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
@@ -256,6 +268,13 @@ class Batch:
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
             self.sequencing_platform = 'Illumina'
+
+            for i in ['fastq1', 'fastq2']:
+                fastq_files = copy.deepcopy(self.df[[i]])
+                files_ok, err = check_files_exist_in_df(fastq_files, i, self.wd)
+                if not files_ok:
+                    self.errors = self.errors.append(err)
+
             try:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
@@ -366,8 +385,15 @@ class Batch:
 
             self.df[['r1_md5', 'r1_sha', 'r2_md5', 'r2_sha']] = self.df.apply(hash_paired_reads, args=(self.wd,), axis=1)
 
-        else:
+
+        elif self.sequencing_platform == 'Nanopore':
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
+
+            fastq_files = copy.deepcopy(self.df[['r_uri']])
+            files_ok, err = check_files_exist_in_df(fastq_files, 'fastq', self.wd)
+            if not files_ok:
+                self.errors = self.errors.append(err)
+
 
         # populate the post-decontamination JSON for passing to the Electron Client app
         self.decontamination_json = self._build_submission()
