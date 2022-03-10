@@ -1,3 +1,7 @@
+pandas
+pandera
+pandarallel
+pycountry
 pytest
 pytest-cov
 pytest-github-actions-annotate-failures

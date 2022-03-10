@@ -1,0 +1,4 @@
+batch,run_number,sample_name,bam,control,collection_date,tags,country,region,district,specimen_organism,host,instrument_platform,primer_scheme
+run 1,run1.1,sample1,sample1.bam,neg,2122-02-01,site0:repeat,USA,Texas,1124,SARS-CoV-2,human,Nanopore,ARTICv4.1
+run1,run1.1,sample2,sample2.bam,,2022/03/01 10:00:00,site0;project1,FR,Finistere,,SARS-CoV-2,human,Nanopore,auto
+run1,run1.1,sample3,sample3.bam,,2000-03-09,site0,GBR,Devon,,Covid,Homo Sapiens,nanopore,auto

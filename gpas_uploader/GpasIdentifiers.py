@@ -1,7 +1,11 @@
+#! /usr/bin/env python3
+
 import hashlib
+import uuid
+
+import pandas
 
 a = "BCDFGHJKMPQRTVWXY2346789"
-
 
 def hash(fn):
     sha = hashlib.sha256()
@@ -23,5 +27,13 @@ def enc(n, a=a):
     return "".join(s)
 
 
-def name(fn):
+def create_batch_name(fn):
     return enc(hash(fn))[:7]
+
+
+def assign_gpas_identifiers(row, lookup):
+
+    gpas_sample_name = str(uuid.uuid4())
+    gpas_run_number = lookup[row.run_number]
+
+    return pandas.Series([gpas_sample_name, gpas_run_number])
