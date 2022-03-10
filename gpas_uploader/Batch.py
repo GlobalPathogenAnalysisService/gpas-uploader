@@ -102,9 +102,9 @@ def format_error(row):
         error message, defaults to 'problem in <field_name> field'
     """
     if row.check == 'column_in_schema':
-        return('unexpected column ' + row.failure_case[0] + ' found in upload CSV')
+        return('unexpected column ' + row.failure_case + ' found in upload CSV')
     if row.check == 'column_in_dataframe':
-        return('column ' + row.failure_case[0] + ' missing from upload CSV')
+        return('column ' + row.failure_case + ' missing from upload CSV')
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
@@ -162,8 +162,8 @@ def check_files_exist(row, file_extension, wd):
     if not (wd / row[file_extension]).is_file():
         return(row[file_extension] + ' does not exist')
     else:
-        if (wd / row[file_extension]).stat().st_size == 0:
-            return(row[file_extension] + ' is empty')
+        if (wd / row[file_extension]).stat().st_size < 100:
+            return(row[file_extension] + ' is too small (< 100 bytes)')
         else:
             return(None)
 
@@ -221,7 +221,7 @@ class Batch:
         # instance variables
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
-        self.errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
+        self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
@@ -249,7 +249,7 @@ class Batch:
                 self._convert_bams()
             else:
                 # if the files don't exist, add to the errors DataFrame
-                self.errors = self.errors.append(err)
+                self.validation_errors = self.validation_errors.append(err)
 
         # have to treat the upload CSV differently depending on whether it specifies
         # paired or unpaired reads
@@ -259,12 +259,12 @@ class Batch:
             fastq_files = copy.deepcopy(self.df[['fastq']])
             files_ok, err = check_files_exist_in_df(fastq_files, 'fastq', self.wd)
             if not files_ok:
-                self.errors = self.errors.append(err)
+                self.validation_errors = self.validation_errors.append(err)
 
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                self.errors = self.errors.append(build_errors(err))
+                self.validation_errors = self.validation_errors.append(build_errors(err))
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
             self.sequencing_platform = 'Illumina'
@@ -273,19 +273,19 @@ class Batch:
                 fastq_files = copy.deepcopy(self.df[[i]])
                 files_ok, err = check_files_exist_in_df(fastq_files, i, self.wd)
                 if not files_ok:
-                    self.errors = self.errors.append(err)
+                    self.validation_errors = self.validation_errors.append(err)
 
             try:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                self.errors = self.errors.append(build_errors(err))
+                self.validation_errors = self.validation_errors.append(build_errors(err))
 
-        self.errors.set_index('gpas_sample_name', inplace=True)
+        self.validation_errors.set_index('gpas_sample_name', inplace=True)
         self.df.reset_index(inplace=True)
         self.df.set_index('gpas_sample_name', inplace=True)
 
         # no errors have been returned
-        if len(self.errors) == 0:
+        if len(self.validation_errors) == 0:
 
             self.valid = True
             samples = []
@@ -302,9 +302,8 @@ class Batch:
 
             self.valid = False
             errors = []
-            for idx,row in self.errors.iterrows():
+            for idx,row in self.validation_errors.iterrows():
                 errors.append({"sample": idx, "error": row.error_message})
-                #, "detailed_description": row.check})
 
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
 
@@ -357,8 +356,9 @@ class Batch:
             the folder where to write the decontaminated FASTQ files (Default is /tmp)
         run_parallel: bool
             if True, run readItAndKeep in parallel using pandarallel (default False)
-
         """
+
+        self.decontamination_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
@@ -373,7 +373,7 @@ class Batch:
 
         else:
 
-            pandarallel.initialize(progress_bar=False, verbose=0)
+            pandarallel.initialize(verbose=0)
 
             if self.sequencing_platform == 'Nanopore':
                 self.df['r_uri'] = self.df.parallel_apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir,), axis=1)
@@ -381,22 +381,43 @@ class Batch:
             elif self.sequencing_platform == 'Illumina':
                 self.df[['r1_uri', 'r2_uri']] = self.df.parallel_apply(gpas_uploader.remove_pii_paired_reads, args=(self.wd, outdir,), axis=1)
 
+
         if self.sequencing_platform == 'Illumina':
 
             self.df[['r1_md5', 'r1_sha', 'r2_md5', 'r2_sha']] = self.df.apply(hash_paired_reads, args=(self.wd,), axis=1)
+
+            for i in ['r1_uri', 'r2_uri']:
+                fastq_files = copy.deepcopy(self.df[[i]])
+                files_ok, err = check_files_exist_in_df(fastq_files, i, self.wd)
+                if not files_ok:
+                    self.decontamination_errors = self.decontamination_errors.append(err)
 
 
         elif self.sequencing_platform == 'Nanopore':
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
 
             fastq_files = copy.deepcopy(self.df[['r_uri']])
-            files_ok, err = check_files_exist_in_df(fastq_files, 'fastq', self.wd)
+            files_ok, err = check_files_exist_in_df(fastq_files, 'r_uri', self.wd)
             if not files_ok:
-                self.errors = self.errors.append(err)
+                self.decontamination_errors = self.decontamination_errors.append(err)
 
+        if len(self.decontamination_errors)>0:
 
-        # populate the post-decontamination JSON for passing to the Electron Client app
-        self.decontamination_json = self._build_submission()
+            self.decontamination_completed = False
+
+            errors = []
+            for idx,row in self.decontamination_errors.iterrows():
+                errors.append({"sample": row.gpas_sample_name, "error": row.error_message})
+
+            self.decontamination_json  = { "submission": {
+                "status": "failure",
+                "samples": errors } }
+        else:
+
+            self.decontamination_completed = True
+
+            # populate the post-decontamination JSON for passing to the Electron Client app
+            self.decontamination_json = self._build_submission()
 
     def _build_submission(self):
         """Prepare the JSON payload for the GPAS Upload app
@@ -446,6 +467,7 @@ class Batch:
 
         return {
             "submission": {
+                "status": "completed",
                 "batch": {
                     "file_name": self.gpas_batch,
                     "uploaded_on": currentTime,
