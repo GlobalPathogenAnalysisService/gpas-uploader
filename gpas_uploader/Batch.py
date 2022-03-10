@@ -102,7 +102,9 @@ def format_error(row):
         error message, defaults to 'problem in <field_name> field'
     """
     if row.check == 'column_in_schema':
-        return('unexpected column ' + row.failure_case + ' found in upload CSV')
+        return('unexpected column ' + row.failure_case[0] + ' found in upload CSV')
+    if row.check == 'column_in_dataframe':
+        return('column ' + row.failure_case[0] + ' missing from upload CSV')
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
@@ -218,20 +220,19 @@ class Batch:
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
 
-        # determine how many
+        # number the runs 1,2,3..
         self.run_numbers = list(self.df.run_number.unique())
         self.run_number_lookup = {}
         for i in range(len(self.run_numbers)):
             self.run_number_lookup[self.run_numbers[i]] = i
 
-        # create the assumed unique GPAS batch id
+        # create the assumed unique GPAS batch id and sample names
         self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
-
         self.df['gpas_batch'] = self.gpas_batch
         self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
         self.df.set_index('gpas_sample_name', inplace=True)
 
-        # if the upload CSV contains BAMs, checl they exist, then convert
+        # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
         if 'bam' in self.df.columns:
 
             # check that the BAM files exist in the working directory
@@ -239,17 +240,15 @@ class Batch:
             files_ok, err = check_files_exist_in_df(bam_files, 'bam', self.wd)
 
             if files_ok:
-
                 self._convert_bams()
-
             else:
-
                 # if the files don't exist, add to the errors DataFrame
                 self.errors = self.errors.append(err)
 
+        # have to treat the upload CSV differently depending on whether it specifies
+        # paired or unpaired reads
         if 'fastq' in self.df.columns:
             self.sequencing_platform = 'Nanopore'
-
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
@@ -257,21 +256,19 @@ class Batch:
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
             self.sequencing_platform = 'Illumina'
-
             try:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
                 self.errors = self.errors.append(build_errors(err))
 
         self.errors.set_index('gpas_sample_name', inplace=True)
-
         self.df.reset_index(inplace=True)
         self.df.set_index('gpas_sample_name', inplace=True)
 
+        # no errors have been returned
         if len(self.errors) == 0:
 
             self.valid = True
-
             samples = []
             for idx,row in self.df.iterrows():
                 if self.sequencing_platform == 'Illumina':
@@ -281,11 +278,10 @@ class Batch:
 
             self.validation_json = {"validation": {"status": "completed", "samples": samples}}
 
-
+        # errors have been returned
         else:
 
             self.valid = False
-
             errors = []
             for idx,row in self.errors.iterrows():
                 errors.append({"sample": idx, "error": row.error_message})
@@ -313,11 +309,9 @@ class Batch:
 
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
-
                 self.df[['fastq1', 'fastq2']] = self.df.apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
 
             elif self.df.instrument_platform.unique()[0] == 'Nanopore':
-
                 self.df['fastq'] = self.df.apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
 
         else:
@@ -326,11 +320,9 @@ class Batch:
 
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
-
                 self.df[['fastq1', 'fastq2']] = self.df.parallel_apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
 
             elif self.df.instrument_platform.unique()[0] == 'Nanopore':
-
                 self.df['fastq'] = self.df.parallel_apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
 
         # now that we've added fastq column(s) we need to remove the bam column
@@ -377,9 +369,10 @@ class Batch:
         else:
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
 
-        self.decontamination_json = self._make_submission()
+        # populate the post-decontamination JSON for passing to the Electron Client app
+        self.decontamination_json = self._build_submission()
 
-    def _make_submission(self):
+    def _build_submission(self):
         """Prepare the JSON payload for the GPAS Upload app
 
         Returns

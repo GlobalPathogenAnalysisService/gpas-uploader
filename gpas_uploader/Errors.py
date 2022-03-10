@@ -6,7 +6,6 @@ class GpasError(Exception):
     pass
 
 
-
 def dmsg(sample_name, error, msg=None, json=False, file=sys.stdout):
     if not msg:
         msg = {}

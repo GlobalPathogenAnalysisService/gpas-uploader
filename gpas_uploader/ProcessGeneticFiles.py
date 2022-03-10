@@ -9,7 +9,15 @@ from pathlib import Path
 import gpas_uploader
 
 def locate_bam_binary():
+    """Locate samtools by searching the $PATH and in the current folder.
 
+    Returns
+    -------
+    str
+        path to the samtools binary
+    """
+    # if there is a local samtools use that one
+    # (as will be the case inside the Electron client)
     if Path("./samtools").exists():
         return str(Path("./samtools").resolve())
 
@@ -21,7 +29,13 @@ def locate_bam_binary():
         raise GpasError({"BAM conversion": "samtools not found"})
 
 def locate_riak_binary():
+    """Locate ReadItAndKeep by searching the $PATH and in the current folder.
 
+    Returns
+    -------
+    str
+        path to the ReadItAndKeep binary
+    """
     # if there is a local riak use that one
     # (as will be the case inside the Electron client)
     if Path("./readItAndKeep").exists():
@@ -36,7 +50,24 @@ def locate_riak_binary():
 
 
 def convert_bam_paired_reads(row, wd):
+    """Convert a BAM file into a pair of FASTQ files.
 
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row : pandas.Series
+        row from pandas.DataFrame
+    wd : pathlib.Path
+        working directory
+
+    Returns
+    -------
+    pandas.Series
+        containing paths to both FASTQ files
+    """
+
+    # locate the samtools binary
     samtools = locate_bam_binary()
 
     stem = row['bam'].split('.bam')[0]
@@ -75,7 +106,22 @@ def convert_bam_paired_reads(row, wd):
     return(pandas.Series([stem + "_1.fastq.gz", stem + "_2.fastq.gz"]))
 
 def convert_bam_unpaired_reads(row, wd):
+    """Convert a BAM file into a single unpaired FASTQ file.
 
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row : pandas.Series
+        row from pandas.DataFrame
+    wd : pathlib.Path
+        working directory
+
+    Returns
+    -------
+    str
+        path to the created FASTQ file
+    """
     samtools = locate_bam_binary()
 
     stem = row['bam'].split('.bam')[0]
@@ -102,7 +148,24 @@ def convert_bam_unpaired_reads(row, wd):
     return(stem + '.fastq.gz')
 
 def remove_pii_unpaired_reads(row, wd, outdir):
+    """Remove personally identifiable reads from an unpaired FASTQ file using ReadItAndKeep.
 
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row : pandas.Series
+        row from pandas.DataFrame
+    wd : pathlib.Path
+        working directory
+    outdir : pathlib.Path
+        output directory
+
+    Returns
+    -------
+    str
+        path to the decontaminated FASTQ file
+    """
     gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq)}, json=True)
 
     riak = locate_riak_binary()
@@ -141,6 +204,24 @@ def remove_pii_unpaired_reads(row, wd, outdir):
     return(str(fq))
 
 def remove_pii_paired_reads(row, wd, outdir):
+    """Remove personally identifiable reads from a pair of FASTQ files using ReadItAndKeep.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row : pandas.Series
+        row from pandas.DataFrame
+    wd : pathlib.Path
+        working directory
+    outdir : pathlib.Path
+        output directory
+
+    Returns
+    -------
+    pandas.Series
+        paths to the decontaminated pair of FASTQ files
+    """
     gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq1)}, json=True)
     gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq2)}, json=True)
 

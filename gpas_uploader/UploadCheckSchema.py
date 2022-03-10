@@ -8,7 +8,7 @@ from gpas_uploader import BaseCheckSchema
 
 class IlluminaFASTQCheckSchema(BaseCheckSchema):
     '''
-    panderas Schema Model for upload CSVs containing Illumina paired reads
+    Validate GPAS upload CSVs specifying paired reads (e.g Illumina).
     '''
 
     # validate that the fastq1 file is alphanumeric and unique
@@ -30,7 +30,7 @@ class IlluminaFASTQCheckSchema(BaseCheckSchema):
 
 class NanoporeFASTQCheckSchema(BaseCheckSchema):
     '''
-    panderas Schema Model for upload CSVs containing Nanopore unpaired reads
+    Validate GPAS upload CSVs specifying unpaired reads (e.g. Nanopore).
     '''
 
     # validate that the fastq file is alphanumeric and unique
@@ -44,7 +44,7 @@ class NanoporeFASTQCheckSchema(BaseCheckSchema):
 
 class BAMCheckSchema(BaseCheckSchema):
     '''
-    panderas Schema Model for upload CSVs containing BAM files
+    Validate GPAS upload CSVs specifying BAM files.
     '''
 
     # validate that the bam file is alphanumeric and unique

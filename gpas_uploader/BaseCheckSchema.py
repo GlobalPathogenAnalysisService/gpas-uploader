@@ -9,6 +9,14 @@ import pycountry
 
 @extensions.register_check_method()
 def region_is_valid(df):
+    """
+    Validate the region field using ISO-3166-2 (pycountry).
+
+    Returns
+    -------
+    bool
+        True if all regions are ok, False otherwise
+    """
 
     def validate_region(row):
         result = pycountry.countries.get(alpha_3=row.country)
@@ -25,7 +33,9 @@ def region_is_valid(df):
 
 class BaseCheckSchema(pandera.SchemaModel):
     '''
-    Class that validates the common fields in a GPAS upload CSV.
+    Validate generic GPAS upload CSVs.
+
+    Built off to validate specific cases.
     '''
 
     # validate that batch is alphanumeric only
