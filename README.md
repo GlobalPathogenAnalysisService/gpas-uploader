@@ -8,7 +8,7 @@ To download, install and run the unit tests
 
 ```
 $ git clone https://github.com/GenomePathogenAnalysisService/gpas-uploader
-$ cd gpas-upload
+$ cd gpas-uploader
 $ pip install .
 $ py.test
 ```
