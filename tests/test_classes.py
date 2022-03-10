@@ -30,7 +30,7 @@ def test_illumina_bam_instrument_notunique():
     assert not a.valid
 
     # there is only a single error
-    assert len(a.errors) == 1
+    assert len(a.validation_errors) == 1
 
 
 
@@ -42,10 +42,10 @@ def test_illumina_bam_files_donotexist():
     assert not a.valid
 
     # there is only a single error
-    assert len(a.errors) == 1
+    assert len(a.validation_errors) == 1
 
     # which is that one of the bam files does not exist
-    assert list(a.errors.error_message) == ['sample4.bam is empty']
+    assert list(a.validation_errors.error_message) == ['sample4.bam is too small (< 100 bytes)']
 
 
 def test_nanopore_bam_check_fails_1():
@@ -56,10 +56,10 @@ def test_nanopore_bam_check_fails_1():
     assert not a.valid
 
     # there should be 11 different errors
-    assert len(a.errors) == 13
+    assert len(a.validation_errors) == 13
 
     # two of the errors apply to the whole sheet
-    assert len(a.errors[a.errors.index.isna()]) == 2
+    assert len(a.validation_errors[a.validation_errors.index.isna()]) == 2
 
 
 def test_illumina_fastq_pass_1():
