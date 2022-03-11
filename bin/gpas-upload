@@ -17,9 +17,10 @@ subparsers = parser.add_subparsers(dest="command")
 validate_args = subparsers.add_parser(
     "validate", help="parse and validate an upload CSV"
 )
+validate_args.add_argument("--tags", default=None, help='plaintext file of allowed tags with one tag per line')
 validate_args.add_argument("samplesheet")
 
-import_args = subparsers.add_parser("decontaminate")
+import_args = subparsers.add_parser("decontaminate", help='remove human reads from the FASTQ files specified in the upload CSV file')
 import_args.add_argument("--dir", default='/tmp/')
 import_args.add_argument("--output_csv", default='sample_names.csv', help='the name of the CSV to store the local->GPAS (batch,run,sample) lookup table')
 import_args.add_argument("samplesheet")
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 
         samplesheet = Path(args.samplesheet)
 
-        upload_csv = gpas_uploader.Batch(samplesheet, run_parallel=args.parallel)
+        upload_csv = gpas_uploader.Batch(samplesheet, run_parallel=args.parallel, tags_file=args.tags)
 
         print(upload_csv.validation_json)
 

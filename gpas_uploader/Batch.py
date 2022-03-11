@@ -191,6 +191,22 @@ def check_files_exist_in_df(df, file_extension, wd):
         err.rename(columns={'name': 'sample_name'}, inplace=True)
         return(False, err)
 
+def check_tags(row, allowed_tags):
+    """Check that the tags all match a supplied set of allowed tags.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Returns
+    -------
+    bool
+        True if all match, otherwise False
+    """
+    tags_ok = True
+    cols = row['tags'].split(':')
+    for i in cols:
+        if i not in allowed_tags:
+            tags_ok = False
+    return(tags_ok)
 
 class Batch:
     """
@@ -216,7 +232,7 @@ class Batch:
     0
 
     """
-    def __init__(self, upload_csv, run_parallel=False):
+    def __init__(self, upload_csv, run_parallel=False, tags_file=None):
 
         # instance variables
         self.upload_csv = Path(upload_csv)
@@ -279,6 +295,21 @@ class Batch:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
                 self.validation_errors = self.validation_errors.append(build_errors(err))
+
+
+        # allow a user to specify a file containing tags to validate against
+        if tags_file is not None:
+            allowed_tags = set()
+            with open(tags_file, 'r') as INPUT:
+                for line in INPUT:
+                    allowed_tags.add(line.rstrip())
+
+            self.df['tags_ok'] = self.df.apply(check_tags, args=(allowed_tags,), axis=1)
+            a = copy.deepcopy(self.df[~self.df['tags_ok']])
+            a['error_message'] = 'tags do not validate'
+            a.reset_index(inplace=True)
+            a = a[['gpas_sample_name', 'error_message']]
+            self.validation_errors = self.validation_errors.append(a)
 
         self.validation_errors.set_index('gpas_sample_name', inplace=True)
         self.df.reset_index(inplace=True)
