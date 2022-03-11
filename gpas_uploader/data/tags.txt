@@ -1,8 +1,0 @@
-University_of_Oxford
-HPRU
-BRC_Covid
-Batch_passed_neg_ctrl
-Good_quality
-Poor_quality
-site0
-repeat

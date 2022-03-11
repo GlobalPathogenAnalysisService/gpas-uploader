@@ -122,3 +122,9 @@ def test_illumina_fastq_fail_1():
 
     # this spreadsheet is valid
     assert not a.decontamination_successful
+
+def test_illumina_fastq_fail_2():
+
+    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-pass-1.csv', tags_file='tests/files/tags.txt')
+
+    assert not a.valid

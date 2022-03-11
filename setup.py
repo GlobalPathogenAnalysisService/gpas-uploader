@@ -18,7 +18,7 @@ setup(
         'pandarallel',
         'pycountry'
         ],
-    scripts=['bin/gpas-upload', 'bin/gpas-validate-upload-csv.py'],
+    scripts=['bin/gpas-upload'],
     packages = ['gpas_uploader'],
     license = 'MIT',
     python_requires='>=3.7',

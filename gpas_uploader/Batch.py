@@ -232,11 +232,12 @@ class Batch:
     0
 
     """
-    def __init__(self, upload_csv, run_parallel=False, tags_file=None):
+    def __init__(self, upload_csv, run_parallel=False, tags_file=None, output_json=False):
 
         # instance variables
         self.upload_csv = Path(upload_csv)
         self.wd = self.upload_csv.parent
+        self.output_json = output_json
         self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         # store the upload CSV internally as a pandas.DataFrame
@@ -397,20 +398,20 @@ class Batch:
         if platform == 'Windows' or run_parallel is False:
 
             if self.sequencing_platform == 'Nanopore':
-                self.df['r_uri'] = self.df.apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir,), axis=1)
+                self.df['r_uri'] = self.df.apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir, self.output_json), axis=1)
 
             elif self.sequencing_platform == 'Illumina':
-                self.df[['r1_uri', 'r2_uri']] = self.df.apply(gpas_uploader.remove_pii_paired_reads, args=(self.wd, outdir,), axis=1)
+                self.df[['r1_uri', 'r2_uri']] = self.df.apply(gpas_uploader.remove_pii_paired_reads, args=(self.wd, outdir, self.output_json), axis=1)
 
         else:
 
             pandarallel.initialize(verbose=0)
 
             if self.sequencing_platform == 'Nanopore':
-                self.df['r_uri'] = self.df.parallel_apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir,), axis=1)
+                self.df['r_uri'] = self.df.parallel_apply(gpas_uploader.remove_pii_unpaired_reads, args=(self.wd, outdir, self.output_json), axis=1)
 
             elif self.sequencing_platform == 'Illumina':
-                self.df[['r1_uri', 'r2_uri']] = self.df.parallel_apply(gpas_uploader.remove_pii_paired_reads, args=(self.wd, outdir,), axis=1)
+                self.df[['r1_uri', 'r2_uri']] = self.df.parallel_apply(gpas_uploader.remove_pii_paired_reads, args=(self.wd, outdir, self.output_json), axis=1)
 
 
         if self.sequencing_platform == 'Illumina':

@@ -147,7 +147,7 @@ def convert_bam_unpaired_reads(row, wd):
     # now that we have a FASTQ, add it to the dict
     return(stem + '.fastq.gz')
 
-def remove_pii_unpaired_reads(row, wd, outdir):
+def remove_pii_unpaired_reads(row, wd, outdir, output_json):
     """Remove personally identifiable reads from an unpaired FASTQ file using ReadItAndKeep.
 
     Designed to be used with pandas.DataFrame.apply
@@ -166,7 +166,8 @@ def remove_pii_unpaired_reads(row, wd, outdir):
     str
         path to the decontaminated FASTQ file
     """
-    gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq)}, json=True)
+    if output_json:
+        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq)}, json=True)
 
     riak = locate_riak_binary()
 
@@ -199,11 +200,12 @@ def remove_pii_unpaired_reads(row, wd, outdir):
 
     fq = outdir / f"{row.sample_name}.reads.fastq.gz"
 
-    gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
+    if output_json:
+        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
 
     return(str(fq))
 
-def remove_pii_paired_reads(row, wd, outdir):
+def remove_pii_paired_reads(row, wd, outdir, output_json):
     """Remove personally identifiable reads from a pair of FASTQ files using ReadItAndKeep.
 
     Designed to be used with pandas.DataFrame.apply
@@ -222,8 +224,9 @@ def remove_pii_paired_reads(row, wd, outdir):
     pandas.Series
         paths to the decontaminated pair of FASTQ files
     """
-    gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq1)}, json=True)
-    gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq2)}, json=True)
+    if output_json:
+        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq1)}, json=True)
+        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq2)}, json=True)
 
     riak = locate_riak_binary()
 
@@ -259,7 +262,8 @@ def remove_pii_paired_reads(row, wd, outdir):
     fq1 = outdir / f"{row.sample_name}.reads_1.fastq.gz"
     fq2 = outdir / f"{row.sample_name}.reads_2.fastq.gz"
 
-    gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
-    gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq2), 'cleaned': str(fq2)}, json=True)
+    if output_json:
+        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
+        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq2), 'cleaned': str(fq2)}, json=True)
 
     return(pandas.Series([str(fq1), str(fq2)]))
