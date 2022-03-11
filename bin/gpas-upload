@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
             sys.stdout.flush()
 
-            if upload_csv.decontamination_completed:
+            if upload_csv.decontamination_successful:
 
                 # to avoid overwriting a sample_names.csv, rename any existing
                 # file to sample_names.csv.001. If that also exists, instead rename

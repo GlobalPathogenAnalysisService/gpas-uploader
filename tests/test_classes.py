@@ -9,7 +9,7 @@ def test_no_upload_csv_fails():
 
 def test_illumina_bam_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv')
+    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     # this spreadsheet is valid
     assert a.valid
@@ -17,7 +17,7 @@ def test_illumina_bam_pass_1():
 
 def test_nanopore_bam_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-pass-1.csv')
+    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     # this spreadsheet is valid
     assert a.valid
@@ -50,7 +50,7 @@ def test_illumina_bam_files_donotexist():
 
 def test_nanopore_bam_check_fails_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-fail-1.csv')
+    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-fail-1.csv', run_parallel=True)
 
     # this spreadsheet is not valid!
     assert not a.valid
@@ -80,9 +80,45 @@ def test_illumina_fastq_pass_2():
 
 
 # check an upload CSV where batch is incorrectly called batch_name
-def test_illumina_fastq_pass_2():
+def test_illumina_fastq_fail_1():
 
     a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-1.csv')
 
     # this spreadsheet is valid
     assert not a.valid
+
+def test_nanopore_bam_decontaminate_pass_1():
+
+    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
+
+    a.decontaminate(run_parallel=True)
+
+    assert a.decontamination_successful
+
+
+def test_illumina_bam_decontaminate_pass_1():
+
+    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
+
+    a.decontaminate(run_parallel=True)
+
+    assert a.decontamination_successful
+
+
+# check an upload CSV where one of the pair of input FASTQ files is zero-byted
+def test_illumina_fastq_fail_1():
+
+    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-2.csv')
+
+    # this spreadsheet is valid
+    assert not a.valid
+
+# check an upload CSV where one of the unpaired FASTQ files contains no SARS-CoV-2 reads so the resulting FASTQ file is empty
+def test_illumina_fastq_fail_1():
+
+    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-fail-2.csv')
+
+    a.decontaminate(run_parallel=True)
+
+    # this spreadsheet is valid
+    assert not a.decontamination_successful

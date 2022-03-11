@@ -403,7 +403,7 @@ class Batch:
 
         if len(self.decontamination_errors)>0:
 
-            self.decontamination_completed = False
+            self.decontamination_successful = False
 
             errors = []
             for idx,row in self.decontamination_errors.iterrows():
@@ -414,7 +414,7 @@ class Batch:
                 "samples": errors } }
         else:
 
-            self.decontamination_completed = True
+            self.decontamination_successful = True
 
             # populate the post-decontamination JSON for passing to the Electron Client app
             self.decontamination_json = self._build_submission()
