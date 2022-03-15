@@ -267,7 +267,7 @@ class Batch:
                 self._convert_bams()
             else:
                 # if the files don't exist, add to the errors DataFrame
-                self.validation_errors = self.validation_errors.append(err)
+                self.validation_errors = pandas.concat([self.validation_errors,err])
 
         # have to treat the upload CSV differently depending on whether it specifies
         # paired or unpaired reads
@@ -277,12 +277,12 @@ class Batch:
             fastq_files = copy.deepcopy(self.df[['fastq']])
             files_ok, err = check_files_exist_in_df(fastq_files, 'fastq', self.wd)
             if not files_ok:
-                self.validation_errors = self.validation_errors.append(err)
+                self.validation_errors = pandas.concat([self.validation_errors,err])
 
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                self.validation_errors = self.validation_errors.append(build_errors(err))
+                self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
             self.sequencing_platform = 'Illumina'
@@ -291,12 +291,12 @@ class Batch:
                 fastq_files = copy.deepcopy(self.df[[i]])
                 files_ok, err = check_files_exist_in_df(fastq_files, i, self.wd)
                 if not files_ok:
-                    self.validation_errors = self.validation_errors.append(err)
+                    self.validation_errors = pandas.concat([self.validation_errors,err])
 
             try:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                self.validation_errors = self.validation_errors.append(build_errors(err))
+                self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
 
 
         # allow a user to specify a file containing tags to validate against
@@ -311,7 +311,7 @@ class Batch:
             a['error_message'] = 'tags do not validate'
             a.reset_index(inplace=True)
             a = a[['gpas_sample_name', 'error_message']]
-            self.validation_errors = self.validation_errors.append(a)
+            self.validation_errors = pandas.concat([self.validation_errors,a])
 
         self.validation_errors.set_index('gpas_sample_name', inplace=True)
         self.df.reset_index(inplace=True)
@@ -423,8 +423,7 @@ class Batch:
                 fastq_files = copy.deepcopy(self.df[[i]])
                 files_ok, err = check_files_exist_in_df(fastq_files, i, self.wd)
                 if not files_ok:
-                    self.decontamination_errors = self.decontamination_errors.append(err)
-
+                    self.decontamination_errors = pandas.concat([self.decontamination_errors,err])
 
         elif self.sequencing_platform == 'Nanopore':
             self.df[['r_md5', 'r_sha',]] = self.df.apply(hash_unpaired_reads, args=(self.wd,), axis=1)
@@ -432,7 +431,7 @@ class Batch:
             fastq_files = copy.deepcopy(self.df[['r_uri']])
             files_ok, err = check_files_exist_in_df(fastq_files, 'r_uri', self.wd)
             if not files_ok:
-                self.decontamination_errors = self.decontamination_errors.append(err)
+                self.decontamination_errors = pandas.concat([self.decontamination_errors,err])
 
         if len(self.decontamination_errors)>0:
 
