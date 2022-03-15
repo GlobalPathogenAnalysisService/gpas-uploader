@@ -11,7 +11,7 @@ $ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
 $ cd gpas-uploader
 $ python3 -m venv env
 $ source env/bin/activate
-(env) $ pip install .
+(env) $ pip install . pytest
 ```
 
 Before we run the unit tests you will need `readItAndKeep` installed and either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
