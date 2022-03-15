@@ -7,7 +7,7 @@ Pathogen genetic sequencing data command line upload client for GPAS users.
 To download, create a virtual environment, activate it and install and run the unit tests
 
 ```
-$ git clone https://github.com/GenomePathogenAnalysisService/gpas-uploader
+$ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
 $ cd gpas-uploader
 $ python3 -m venv env
 $ source env/bin/activate
