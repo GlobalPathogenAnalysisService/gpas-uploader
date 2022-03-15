@@ -29,8 +29,8 @@ def hash_paired_reads(row, wd):
     -------
     pandas.Series
     """
-    fq1md5, fq1sha = hash_fastq(wd / row.fastq1)
-    fq2md5, fq2sha = hash_fastq(wd / row.fastq2)
+    fq1md5, fq1sha = hash_fastq(row.r1_uri)
+    fq2md5, fq2sha = hash_fastq(row.r2_uri)
     return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
 
 
@@ -48,7 +48,7 @@ def hash_unpaired_reads(row, wd):
     -------
     pandas.Series
     """
-    fqmd5, fqsha = hash_fastq(wd / row.fastq)
+    fqmd5, fqsha = hash_fastq(row.r_uri)
     return(pandas.Series([fqmd5, fqsha]))
 
 
