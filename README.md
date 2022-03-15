@@ -12,7 +12,6 @@ $ cd gpas-uploader
 $ python3 -m venv env
 $ source env/bin/activate
 (env) $ pip install .
-(env) $ py.test
 ```
 
 Before we run the unit tests you will need `readItAndKeep` installed and either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
