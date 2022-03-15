@@ -172,7 +172,7 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     riak = locate_riak_binary()
 
     if reference_genome is None:
-        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'MN908947_no_polyA.fasta')
+        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
     else:
         ref_genome = reference_genome
 
