@@ -4,25 +4,57 @@ Pathogen genetic sequencing data command line upload client for GPAS users.
 
 ## Installation
 
-To download, install and run the unit tests
+To download, create a virtual environment, activate it and install and run the unit tests
 
 ```
 $ git clone https://github.com/GenomePathogenAnalysisService/gpas-uploader
 $ cd gpas-uploader
-$ pip install .
-$ py.test
+$ python3 -m venv env
+$ source env/bin/activate
+(env) $ pip install .
+(env) $ py.test
+```
+
+You will need `readItAndKeep` installed and either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
+
+```
+(env) $ git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
+(env) $ cd read-it-and-keep/src
+(env) $ make
+(env) $ mv readItAndKeep ../..
+(env) $ cd ../..
+```
+
+To process BAM files, you'll also need `samtools`, again either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
+
+```
+(env) $ wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
+(env) $ bunzip2 samtools-1.14.tar.bz2
+(env) $ tar xvf samtools-1.14.tar
+(env) $ cd samtools-1.14
+(env) $ ./configure
+(env) $ make
+(env) $ sudo make install
+(env) $ cd ..
 ```
 
 ## Validate the GPAS upload CSV
 
-Will print a validated JSON object to STDOUT:
+By default the output is text
 
 ```
 $ gpas-upload validate examples/illumina-fastq-upload.csv
-{'validation': {'status': 'completed', 'samples': [{'sample': 'a26cbce9-d25e-4faf-9a24-162e989246f0', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': '824dbb06-0db4-4b74-afa8-3950ca44c66f', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '35c4f7b8-0148-4996-8fc8-2fc373f24885', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
+--> All preliminary checks pass and this upload CSV can be passed to the GPAS upload app
 ```
 
-If the upload CSV specifies BAM files, then they will be converted to FASTQ files using `samtools` in the background e.g.
+but a validated JSON object can also be output
+
+```
+$ gpas-upload --json validate examples/illumina-fastq-upload.csv
+{'validation': {'status': 'completed', 'samples': [{'sample': '07c00741-e10c-4e29-92c4-c84212c96cd9', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': 'bddfc9c2-98eb-4188-ac06-df2cdbc5d397', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '811c8d25-5b1b-46fa-b539-bc18e9dd816a', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
+```
+
+If the upload CSV specifies BAM files, then they will be automatically converted to FASTQ files using `samtools` in the background e.g.
 
 ```
 $ gpas-upload validate examples/illumina-bam-upload.csv
