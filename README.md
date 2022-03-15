@@ -34,7 +34,7 @@ To process BAM files, you'll also need `samtools`, again either in your `$PATH` 
 (env) $ cd samtools-1.14
 (env) $ ./configure
 (env) $ make
-(env) $ sudo make install
+(env) $ mv samtools ..
 (env) $ cd ..
 ```
 
