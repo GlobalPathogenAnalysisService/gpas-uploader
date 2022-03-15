@@ -147,7 +147,7 @@ def convert_bam_unpaired_reads(row, wd):
     # now that we have a FASTQ, add it to the dict
     return(stem + '.fastq.gz')
 
-def remove_pii_unpaired_reads(row, wd, outdir, output_json):
+def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     """Remove personally identifiable reads from an unpaired FASTQ file using ReadItAndKeep.
 
     Designed to be used with pandas.DataFrame.apply
@@ -171,7 +171,10 @@ def remove_pii_unpaired_reads(row, wd, outdir, output_json):
 
     riak = locate_riak_binary()
 
-    ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+    if reference_genome is None:
+        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'MN908947_no_polyA.fasta')
+    else:
+        ref_genome = reference_genome
 
     riak_command = [
         riak,
@@ -205,7 +208,7 @@ def remove_pii_unpaired_reads(row, wd, outdir, output_json):
 
     return(str(fq))
 
-def remove_pii_paired_reads(row, wd, outdir, output_json):
+def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
     """Remove personally identifiable reads from a pair of FASTQ files using ReadItAndKeep.
 
     Designed to be used with pandas.DataFrame.apply
@@ -230,7 +233,10 @@ def remove_pii_paired_reads(row, wd, outdir, output_json):
 
     riak = locate_riak_binary()
 
-    ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+    if reference_genome is None:
+        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+    else:
+        ref_genome = reference_genome
 
     riak_command = [
         riak,
