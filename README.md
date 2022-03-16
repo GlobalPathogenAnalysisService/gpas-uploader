@@ -1,3 +1,5 @@
+[![Tests](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/test.yaml/badge.svg)](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/test.yaml)
+
 # gpas-uploader
 
 Pathogen genetic sequencing data command line upload client for GPAS users.
