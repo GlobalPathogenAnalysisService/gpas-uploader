@@ -27,7 +27,7 @@ jobs:
          cd samtools-1.14
          ./configure
          make
-         sudo make install
+         cp samtools ..
          cd ..
 
     - name: Install readItAndKeep
@@ -51,9 +51,9 @@ jobs:
     - name: Copy files into dist/
       run: |
         cp gpas_uploader/MN908947_no_polyA.fasta dist/
-        cp samtools dist/
         cp readItAndKeep dist/
-        
+        cp samtools dist/
+
     - name: Test binary
       run: |
         cd dist/
