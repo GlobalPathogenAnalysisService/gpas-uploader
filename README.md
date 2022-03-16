@@ -1,3 +1,5 @@
+[![Tests](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/test.yaml/badge.svg)](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/test.yaml)
+
 # gpas-uploader
 
 Pathogen genetic sequencing data command line upload client for GPAS users.
@@ -106,7 +108,7 @@ This is necessary to package up `gpas-upload` inside the Electron Client. First 
 (env) $ python3 -m PyInstaller -F bin/gpas-upload
 ```
 
-The result will be a single binary as below. `ReadItAndKeep` requires the reference genome file as an input; we've been unable to get this working with `--add-data` and `importlib.resources.path` so for the time being you will need to copy this file alongside the binary as below.
+The result will be a single binary as below. `ReadItAndKeep` requires the reference genome file as an input; we've been unable to get this working with `--add-data` and `importlib.resources.path` so for the time being you will need to copy this file alongside the binary as below. If you do not then `ReadItAndKeep` will fail and hence the `decontaminate` step will not work.
 
 ```
 (env) $ ls dist/
@@ -164,6 +166,17 @@ And finally a failing case
 (env) $ ./gpas-upload --json decontaminate ../tests/files/nanopore-fastq-upload-csv-fail-1.csv
 {'validation': {'status': 'failure', 'samples': [{'sample': 'f15fe4c5-33ef-4ee6-ba3a-4ff1d234b979', 'error': 'sample4.fastq.gz is too small (< 100 bytes)'}]}}
 ```
+
+### Automated build via GitHub Actions
+
+In addition, the above `PyInstaller` process can be run by a GitHub Action on both ubuntu-latest and macos-latest OS producing two artefacts that can be downloaded. Since the GitHub Action takes several minutes, it is not run automatically on `push` but instead must be manually triggered at present. To do this go [here](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/distribute.yaml) and click the `Run workflow` button. Once complete, the summary page for the Action will have an Artifacts box from which you can download `gpas-upload-macos-latest` and `gpas-upload-ubuntu-latest` zip files. Unzipped these contain
+
+```
+$ ls 
+MN908947_no_polyA.fasta      samtools
+gpas-upload                  readItAndKeep
+```
+You will need to make all bar the fasta file executable, which on a Mac will require you to use System Preferences to allow these applications to be opened, since they have not been code signed.
 
 ## Technical notes
 
