@@ -22,7 +22,7 @@ setup(
     packages = ['gpas_uploader'],
     license = 'MIT',
     python_requires='>=3.7',
-    package_data={'': ['data/*']},
+    package_data={'': ['*', 'data/*']},
     include_package_data=True,
     zip_safe=False
     )

@@ -1,10 +1,13 @@
 #! /usr/bin/env python3
 
 import shutil
+import os
+import sys
 import subprocess
-import pandas
-import pkg_resources
+import importlib.resources
 from pathlib import Path
+
+import pandas
 
 import gpas_uploader
 
@@ -171,10 +174,14 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
 
     riak = locate_riak_binary()
 
-    if reference_genome is None:
-        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        ref_genome = 'MN908947_no_polyA.fasta'
     else:
-        ref_genome = reference_genome
+        if reference_genome is None:
+            with importlib.resources.path("gpas_uploader", 'MN908947_no_polyA.fasta') as path:
+                ref_genome = str(path)
+        else:
+            ref_genome = reference_genome
 
     riak_command = [
         riak,
@@ -233,10 +240,14 @@ def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
 
     riak = locate_riak_binary()
 
-    if reference_genome is None:
-        ref_genome = pkg_resources.resource_filename("gpas_uploader", 'data/MN908947_no_polyA.fasta')
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        ref_genome = 'MN908947_no_polyA.fasta'
     else:
-        ref_genome = reference_genome
+        if reference_genome is None:
+            with importlib.resources.path("gpas_uploader", 'MN908947_no_polyA.fasta') as path:
+                ref_genome = str(path)
+        else:
+            ref_genome = reference_genome
 
     riak_command = [
         riak,
