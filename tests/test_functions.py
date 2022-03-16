@@ -2,6 +2,8 @@ import pytest
 import pathlib
 import shutil
 import subprocess
+import importlib
+import sys
 
 # def test_spreadsheet_validation_correctly_fails():
 #
@@ -61,13 +63,19 @@ def test_riak_ok(tmp_path):
     elif shutil.which('readItAndKeep') is not None:
         riak = pathlib.Path(shutil.which('readItAndKeep'))
 
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        ref_genome = 'MN908947_no_polyA.fasta'
+    else:
+        with importlib.resources.path("gpas_uploader", 'MN908947_no_polyA.fasta') as path:
+            ref_genome = str(path)
+
     process = subprocess.Popen(
         [
             riak,
             "--tech",
             "ont",
             '--ref_fasta',
-            'gpas_uploader/data/MN908947_no_polyA.fasta',
+            'gpas_uploader/MN908947_no_polyA.fasta',
             '--reads1',
             'tests/files/sample1.fastq.gz',
             '--outprefix',
