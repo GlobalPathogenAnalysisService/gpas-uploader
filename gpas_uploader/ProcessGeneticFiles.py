@@ -29,7 +29,7 @@ def locate_bam_binary():
         return str(Path(shutil.which('samtools')))
 
     else:
-        raise GpasError({"BAM conversion": "samtools not found"})
+        raise gpas_uploader.GpasError({"BAM conversion": "samtools not found"})
 
 def locate_riak_binary():
     """Locate ReadItAndKeep by searching the $PATH and in the current folder.
@@ -49,7 +49,7 @@ def locate_riak_binary():
         return str(Path(shutil.which('readItAndKeep')))
 
     else:
-        raise GpasError({"decontamination": "read removal tool not found"})
+        raise gpas_uploader.GpasError({"decontamination": "read removal tool not found"})
 
 
 def convert_bam_paired_reads(row, wd):

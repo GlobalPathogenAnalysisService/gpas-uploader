@@ -1,5 +1,5 @@
-name: Build binaries for distribution
-on: [workflow_dispatch]
+name: Tests
+on: [push]
 
 jobs:
   build:
@@ -47,24 +47,3 @@ jobs:
       run: |
         pytest --exitfirst --verbose --failed-first \
         --cov=. --cov-report html tests/
-
-    - name: Create pyinstaller single binary
-      run: |
-        python3 -m PyInstaller -F bin/gpas-upload
-
-    - name: Copy files into dist/
-      run: |
-        cp gpas_uploader/MN908947_no_polyA.fasta dist/
-        cp readItAndKeep dist/
-        cp samtools dist/
-
-    - name: Test binary
-      run: |
-        cd dist/
-        ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
-
-    - name: Store dist
-      uses: actions/upload-artifact@v2
-      with:
-        name: gpas-upload-${{ matrix.os }}
-        path: dist/*
