@@ -66,5 +66,5 @@ jobs:
     - name: Store dist
       uses: actions/upload-artifact@v2
       with:
-        name: gpas-upload-ubuntu
+        name: gpas-upload-${{ matrix.os }}
         path: dist/*
