@@ -6,6 +6,7 @@ import platform
 from pathlib import Path
 import hashlib
 import datetime
+import requests
 
 import pandas
 import pandera
@@ -232,7 +233,7 @@ class Batch:
     0
 
     """
-    def __init__(self, upload_csv, run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
+    def __init__(self, upload_csv, token_file=None, environment='production', run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
 
         # instance variables
         self.upload_csv = Path(upload_csv)
@@ -241,6 +242,44 @@ class Batch:
         self.reference_genome = reference_genome
         self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
+        assert environment in ['development', 'production', 'staging']
+        self.environment = environment
+
+        if token_file is not None:
+            INPUT = open(token_file)
+            token_payload = json.load(INPUT)
+            self.access_token = token_payload['access_token']
+            self.headers = {'Authorization': 'Bearer ' + self.access_token, 'Content-Type': 'application/json'}
+            self.environment_urls = {
+                "development": {
+                    "WORLD_URL": "https://portal.dev.gpas.ox.ac.uk",
+                    "ORDS_PATH": "/ords/gpasdevpdb1/grep/electron",
+                    "DASHBOARD_PATH": "/ords/gpasdevpdb1/gpas/r/gpas-portal/lineages-voc",
+                    "ENV_NAME": "DEV"
+                },
+                "production": {
+                    "WORLD_URL": "https://portal.gpas.ox.ac.uk",
+                    "ORDS_PATH": "/ords/grep/electron",
+                    "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
+                    "ENV_NAME": ""
+                },
+                "staging": {
+                    "WORLD_URL": "https://portal.staging.gpas.ox.ac.uk",
+                    "ORDS_PATH": "/ords/gpasuat/grep/electron",
+                    "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
+                    "ENV_NAME": "STAGE"
+                }
+            }
+
+            url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/userOrgDtls'
+            a = requests.get(url=url, headers=self.headers)
+            result = json.loads(a.content)
+
+            self.user_name = result['userOrgDtl'][0]['userName']
+            self.user_organisation = result['userOrgDtl'][0]['organisation']
+            self.permitted_tags = [i['tagName'] for i in result['userOrgDtl'][0]['tags']]
+            self.df['user_name'] = self.user_name
+            
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
 
