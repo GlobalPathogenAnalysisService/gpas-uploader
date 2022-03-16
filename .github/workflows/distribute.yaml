@@ -48,10 +48,12 @@ jobs:
       run: |
         python3 -m PyInstaller -F bin/gpas-upload
 
-    - name: Copy reference genome
+    - name: Copy files into dist/
       run: |
         cp gpas_uploader/MN908947_no_polyA.fasta dist/
-
+        cp samtools dist/
+        cp readItAndKeep dist/
+        
     - name: Test binary
       run: |
         cd dist/
