@@ -16,7 +16,7 @@ $ source env/bin/activate
 (env) $ pip install . pytest
 ```
 
-Before we run the unit tests you will need `readItAndKeep` installed and either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
+Before we run the unit tests you will need `readItAndKeep` installed and either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue
 
 ```
 (env) $ git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
@@ -26,7 +26,7 @@ Before we run the unit tests you will need `readItAndKeep` installed and either 
 (env) $ cd ../..
 ```
 
-To process BAM files, you'll also need `samtools`, again either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue 
+To process BAM files, you'll also need `samtools`, again either in your `$PATH` or in the `gpas-uploader/` folder. To do the latter issue
 
 ```
 (env) $ wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
@@ -105,7 +105,7 @@ This is necessary to package up `gpas-upload` inside the Electron Client. First 
 
 ```
 (env) $ pip install pyinstaller
-(env) $ python3 -m PyInstaller -F bin/gpas-upload
+(env) $ python3 -m PyInstaller distribute.spec
 ```
 
 The result will be a single binary as below. `ReadItAndKeep` requires the reference genome file as an input; we've been unable to get this working with `--add-data` and `importlib.resources.path` so for the time being you will need to copy this file alongside the binary as below. If you do not then `ReadItAndKeep` will fail and hence the `decontaminate` step will not work.
@@ -137,12 +137,12 @@ optional arguments:
   --json                whether to write text or json to STDOUT
   ```
 So far so good
-  
+
 ```
 (env) $ ./gpas-upload --json validate ../examples/illumina-bam-upload.csv
 {'validation': {'status': 'completed', 'samples': [{'sample': 'df27b4fc-7115-40cd-a044-b61a50e8f5d4', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': '1bd082d2-4278-46b1-9b62-d9e08972c47d', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '1c742eb8-421b-47f7-a4eb-46717a341ed9', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
   ```
-  
+
 Now a stringent test - decontaminating an upload CSV which specifies BAMs. This will therefore call both `samtools` and `ReadItAndKeep`.
  ```
 (env) $ ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
@@ -172,7 +172,7 @@ And finally a failing case
 In addition, the above `PyInstaller` process can be run by a GitHub Action on both ubuntu-latest and macos-latest OS producing two artefacts that can be downloaded. Since the GitHub Action takes several minutes, it is not run automatically on `push` but instead must be manually triggered at present. To do this go [here](https://github.com/GenomePathogenAnalysisService/gpas-uploader/actions/workflows/distribute.yaml) and click the `Run workflow` button. Once complete, the summary page for the Action will have an Artifacts box from which you can download `gpas-upload-macos-latest` and `gpas-upload-ubuntu-latest` zip files. Unzipped these contain
 
 ```
-$ ls 
+$ ls
 MN908947_no_polyA.fasta      samtools
 gpas-upload                  readItAndKeep
 ```
