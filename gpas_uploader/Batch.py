@@ -6,6 +6,7 @@ import platform
 from pathlib import Path
 import hashlib
 import datetime
+import sys
 
 import pandas
 import pandera
@@ -328,7 +329,7 @@ class Batch:
                 else:
                     samples.append({"sample": idx, "files": [row.fastq]})
 
-            self.validation_json = {"validation": {"status": "completed", "samples": samples}}
+            self.validation_json = json.dumps({"validation": {"status": "completed", "samples": samples}})
 
         # errors have been returned
         else:
@@ -338,7 +339,7 @@ class Batch:
             for idx,row in self.validation_errors.iterrows():
                 errors.append({"sample": idx, "error": row.error_message})
 
-            self.validation_json = {"validation": {"status": "failure", "samples": errors}}
+            self.validation_json = json.dumps({"validation": {"status": "failure", "samples": errors}})
 
     def _convert_bams(self, run_parallel=False):
         """Private method that converts BAM files to FASTQ files.
@@ -441,9 +442,9 @@ class Batch:
             for idx,row in self.decontamination_errors.iterrows():
                 errors.append({"sample": row.gpas_sample_name, "error": row.error_message})
 
-            self.decontamination_json  = { "submission": {
+            self.decontamination_json  = json.dumps({ "submission": {
                 "status": "failure",
-                "samples": errors } }
+                "samples": errors } })
         else:
 
             self.decontamination_successful = True
@@ -497,7 +498,7 @@ class Batch:
                                       "md5": row.r_md5}
             samples.append(sample)
 
-        return {
+        return json.dumps({
             "submission": {
                 "status": "completed",
                 "batch": {
@@ -507,4 +508,4 @@ class Batch:
                     "samples": [i for i in samples],
                 }
             }
-        }
+        })
