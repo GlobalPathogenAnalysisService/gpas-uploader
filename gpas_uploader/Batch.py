@@ -279,13 +279,24 @@ class Batch:
         self.wd = self.upload_csv.parent
         self.output_json = output_json
         self.reference_genome = reference_genome
-        self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         assert environment in ['development', 'production', 'staging']
         self.environment = environment
 
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
+
+        # since we get the permitted tags from ORDS, do not allow a user to specify a tags_file if a token is supplied
+        assert not (token_file is not None and tags_file is not None), 'cannot specify both a tags file and an access token!'
+
+        # allow a user to specify a file containing tags to validate against
+        if tags_file is not None:
+            self.permitted_tags = set()
+            with open(tags_file, 'r') as INPUT:
+                for line in INPUT:
+                    self.permitted_tags.add(line.rstrip())
+        else:
+            self.permitted_tags = None
 
         if token_file is None:
             self.connect_to_oci = False
@@ -310,6 +321,15 @@ class Batch:
         self.df['gpas_batch'] = self.gpas_batch
         self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
         self.df.set_index('gpas_sample_name', inplace=True)
+
+
+    def validate(self):
+        """Validate the upload CSV.
+
+        If the upload CSV specifies BAM files, these will first be converted to FASTQ files.
+        """
+
+        self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
 
         # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
         if 'bam' in self.df.columns:
@@ -353,15 +373,8 @@ class Batch:
             except pandera.errors.SchemaErrors as err:
                 self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
 
-
-        # allow a user to specify a file containing tags to validate against
-        if tags_file is not None:
-            allowed_tags = set()
-            with open(tags_file, 'r') as INPUT:
-                for line in INPUT:
-                    allowed_tags.add(line.rstrip())
-
-            self.df['tags_ok'] = self.df.apply(check_tags, args=(allowed_tags,), axis=1)
+        if self.permitted_tags is not None:
+            self.df['tags_ok'] = self.df.apply(check_tags, args=(self.permitted_tags,), axis=1)
             a = copy.deepcopy(self.df[~self.df['tags_ok']])
             a['error_message'] = 'tags do not validate'
             a.reset_index(inplace=True)
@@ -396,6 +409,14 @@ class Batch:
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
 
     def _parse_access_token(self, token_file):
+        """Parse the provided access token and store its contents
+
+        Returns
+        -------
+        access_token: str
+        headers: dict
+        environment_urls: dict
+        """
 
         INPUT = open(token_file)
         token_payload = json.load(INPUT)
@@ -620,6 +641,7 @@ class Batch:
             }
         }
 
+
     def _call_ords_PAR(self):
         """Private method that calls ORDS to get a Pre-Authenticated Request.
 
@@ -649,6 +671,10 @@ class Batch:
         The upload CSV must have successfully been validated and the BAM/FASTQ files decontaminated.
         """
         assert self.connect_to_oci, "can only submit samples on the command line if you have provided a valid token!"
+
+        assert self.valid, 'the upload CSV must have been validated!'
+
+        assert self.decontamination_successful, 'samples must first have been successfully decontaminated!'
 
         par = self._call_ords_PAR()
 
