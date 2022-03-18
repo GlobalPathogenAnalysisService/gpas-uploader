@@ -468,6 +468,8 @@ class Batch:
 
         self.df.set_index('gpas_sample_name', inplace=True)
 
+        self.df.fillna("", inplace=True)
+
         # determine the current time and time zone
         currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
         tzStartIndex = len(currentTime) - 6
