@@ -133,7 +133,7 @@ def convert_bam_unpaired_reads(row, wd):
         [
             samtools,
             'fastq',
-            '-o',
+            '-0',
             wd / Path(stem + '.fastq.gz'),
             wd / Path(row['bam'])
         ],
