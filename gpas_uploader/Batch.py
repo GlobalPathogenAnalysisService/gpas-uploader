@@ -125,12 +125,12 @@ def build_errors(err):
 
     Returns
     -------
-    pandas.DataFrame(columns=['gpas_sample_name', 'error_message'])
+    pandas.DataFrame(columns=['sample_name', 'error_message'])
     """
     failures = err.failure_cases
-    failures.rename(columns={'index':'gpas_sample_name'}, inplace=True)
+    failures.rename(columns={'index':'sample_name'}, inplace=True)
     failures['error_message'] = failures.apply(format_error, axis=1)
-    return(failures[['gpas_sample_name', 'error_message']])
+    return(failures[['sample_name', 'error_message']])
 
 
 def format_error(row):
@@ -316,12 +316,10 @@ class Batch:
         # if self.sequencing_platform == 'Illumina':
         #     self.df[['f1_md5', 'f1_sha', 'f2_md5', 'f2_sha']] = self.df.apply(hash_paired_reads2, args=(self.wd,), axis=1)
 
-        # create the assumed unique GPAS batch id and sample names
-        self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
-        self.df['gpas_batch'] = self.gpas_batch
-        self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
-        self.df.set_index('gpas_sample_name', inplace=True)
-
+        # determine the current time and time zone
+        currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
+        tzStartIndex = len(currentTime) - 6
+        self.uploaded_on = currentTime[:tzStartIndex] + "Z" + currentTime[tzStartIndex:]
 
     def validate(self):
         """Validate the upload CSV.
@@ -329,7 +327,7 @@ class Batch:
         If the upload CSV specifies BAM files, these will first be converted to FASTQ files.
         """
 
-        self.validation_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
+        self.validation_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
 
         # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
         if 'bam' in self.df.columns:
@@ -378,12 +376,12 @@ class Batch:
             a = copy.deepcopy(self.df[~self.df['tags_ok']])
             a['error_message'] = 'tags do not validate'
             a.reset_index(inplace=True)
-            a = a[['gpas_sample_name', 'error_message']]
+            a = a[['sample_name', 'error_message']]
             self.validation_errors = pandas.concat([self.validation_errors,a])
 
-        self.validation_errors.set_index('gpas_sample_name', inplace=True)
+        self.validation_errors.set_index('sample_name', inplace=True)
         self.df.reset_index(inplace=True)
-        self.df.set_index('gpas_sample_name', inplace=True)
+        self.df.set_index('sample_name', inplace=True)
 
         # no errors have been returned
         if len(self.validation_errors) == 0:
@@ -523,7 +521,7 @@ class Batch:
             if True, run readItAndKeep in parallel using pandarallel (default False)
         """
 
-        self.decontamination_errors = pandas.DataFrame(None, columns=['gpas_sample_name', 'error_message'])
+        self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
@@ -565,6 +563,41 @@ class Batch:
             if not files_ok:
                 self.decontamination_errors = pandas.concat([self.decontamination_errors,err])
 
+        if self.connect_to_oci:
+
+            # first make a list of MD5s, one per sample
+            if self.sequencing_platform == 'Illumina':
+                md5s = list(self.df.r1_md5)
+            else:
+                md5s = list(self.df.r_md5)
+
+            # now build the data json object
+
+            data = {
+                "batch" : {
+                    "organisation" : self.user_organisation,
+                    "uploadedOn" : self.uploaded_on,
+                    "uploadedBy" : self.user_name,
+                    "samples" : md5s
+                }
+            }
+
+            print(data)
+
+            url = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/createSampleGuids'
+
+            a = requests.post(url=url, data=json.dumps(data), headers=self.headers)
+            result = json.loads(a.content)
+            print(result)
+
+        else:
+            # create offline the assumed unique GPAS batch id and sample names
+            self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
+            self.df['gpas_batch'] = self.gpas_batch
+            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
+
+        print(self.df)
+
         if len(self.decontamination_errors)>0:
 
             self.decontamination_successful = False
@@ -599,11 +632,6 @@ class Batch:
 
         self.df.set_index('gpas_sample_name', inplace=True)
 
-        # determine the current time and time zone
-        currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
-        tzStartIndex = len(currentTime) - 6
-        currentTime = currentTime[:tzStartIndex] + "Z" + currentTime[tzStartIndex:]
-
         samples = []
         for idx,row in self.df.iterrows():
             sample = {  "sample": idx,
@@ -634,7 +662,7 @@ class Batch:
                 "status": "completed",
                 "batch": {
                     "file_name": self.gpas_batch,
-                    "uploaded_on": currentTime,
+                    "uploaded_on": self.uploaded_on,
                     "run_numbers": [i for i in self.run_number_lookup.values()],
                     "samples": [i for i in samples],
                 }
