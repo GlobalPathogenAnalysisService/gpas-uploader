@@ -2,6 +2,7 @@ pandas
 pandera
 pandarallel
 pycountry
+requests
 pytest
 pytest-cov
 pytest-github-actions-annotate-failures

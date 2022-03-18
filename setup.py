@@ -16,7 +16,8 @@ setup(
         'pandas',
         'pandera',
         'pandarallel',
-        'pycountry'
+        'pycountry',
+        'requests'
         ],
     scripts=['bin/gpas-upload'],
     packages = ['gpas_uploader'],

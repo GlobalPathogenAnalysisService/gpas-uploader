@@ -34,6 +34,27 @@ def hash_paired_reads(row, wd):
     fq2md5, fq2sha = hash_fastq(row.r2_uri)
     return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
 
+def hash_paired_reads2(row, wd):
+    """Calculate the MD5 and SHA hashes for two FASTQ files containing paired reads.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row: pandas.Series
+        supplied by pandas.DataFrame.apply
+    wd: pathlib.Path
+        the working directory
+
+    Returns
+    -------
+    pandas.Series
+    """
+    fq1md5, fq1sha = hash_fastq(row.fastq1)
+    fq2md5, fq2sha = hash_fastq(row.fastq2)
+    return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
+
+
 
 def hash_unpaired_reads(row, wd):
     """Calculate the MD5 and SHA hashes for a FASTQ file containing unpaired reads.
@@ -51,6 +72,24 @@ def hash_unpaired_reads(row, wd):
     """
     fqmd5, fqsha = hash_fastq(row.r_uri)
     return(pandas.Series([fqmd5, fqsha]))
+
+def hash_unpaired_reads2(row, wd):
+    """Calculate the MD5 and SHA hashes for a FASTQ file containing unpaired reads.
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Parameters
+    ----------
+    row: pandas.Series supplied by pandas.DataFrame.apply
+    wd: pathlib.Path of the working directory
+
+    Returns
+    -------
+    pandas.Series
+    """
+    fqmd5, fqsha = hash_fastq(row.fastq)
+    return(pandas.Series([fqmd5, fqsha]))
+
 
 
 def hash_fastq(filename):
@@ -245,49 +284,26 @@ class Batch:
         assert environment in ['development', 'production', 'staging']
         self.environment = environment
 
-        if token_file is not None:
-            INPUT = open(token_file)
-            token_payload = json.load(INPUT)
-            self.access_token = token_payload['access_token']
-            self.headers = {'Authorization': 'Bearer ' + self.access_token, 'Content-Type': 'application/json'}
-            self.environment_urls = {
-                "development": {
-                    "WORLD_URL": "https://portal.dev.gpas.ox.ac.uk",
-                    "ORDS_PATH": "/ords/gpasdevpdb1/grep/electron",
-                    "DASHBOARD_PATH": "/ords/gpasdevpdb1/gpas/r/gpas-portal/lineages-voc",
-                    "ENV_NAME": "DEV"
-                },
-                "production": {
-                    "WORLD_URL": "https://portal.gpas.ox.ac.uk",
-                    "ORDS_PATH": "/ords/grep/electron",
-                    "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
-                    "ENV_NAME": ""
-                },
-                "staging": {
-                    "WORLD_URL": "https://portal.staging.gpas.ox.ac.uk",
-                    "ORDS_PATH": "/ords/gpasuat/grep/electron",
-                    "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
-                    "ENV_NAME": "STAGE"
-                }
-            }
-
-            url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/userOrgDtls'
-            a = requests.get(url=url, headers=self.headers)
-            result = json.loads(a.content)
-
-            self.user_name = result['userOrgDtl'][0]['userName']
-            self.user_organisation = result['userOrgDtl'][0]['organisation']
-            self.permitted_tags = [i['tagName'] for i in result['userOrgDtl'][0]['tags']]
-            self.df['user_name'] = self.user_name
-            
         # store the upload CSV internally as a pandas.DataFrame
         self.df = pandas.read_csv(self.upload_csv, dtype=object)
+
+        if token_file is None:
+            self.connect_to_oci = False
+        else:
+            self.connect_to_oci = True
+
+        if self.connect_to_oci:
+            self.access_token, self.headers, self.environment_urls = self._parse_access_token(token_file)
+            self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
 
         # number the runs 1,2,3..
         self.run_numbers = list(self.df.run_number.unique())
         self.run_number_lookup = {}
         for i in range(len(self.run_numbers)):
             self.run_number_lookup[self.run_numbers[i]] = i
+
+        # if self.sequencing_platform == 'Illumina':
+        #     self.df[['f1_md5', 'f1_sha', 'f2_md5', 'f2_sha']] = self.df.apply(hash_paired_reads2, args=(self.wd,), axis=1)
 
         # create the assumed unique GPAS batch id and sample names
         self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
@@ -378,6 +394,62 @@ class Batch:
                 errors.append({"sample": idx, "error": row.error_message})
 
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
+
+    def _parse_access_token(self, token_file):
+
+        INPUT = open(token_file)
+        token_payload = json.load(INPUT)
+        access_token = token_payload['access_token']
+        headers = {'Authorization': 'Bearer ' + access_token, 'Content-Type': 'application/json'}
+        environment_urls = {
+            "development": {
+                "WORLD_URL": "https://portal.dev.gpas.ox.ac.uk",
+                "ORDS_PATH": "/ords/gpasdevpdb1/grep/electron",
+                "DASHBOARD_PATH": "/ords/gpasdevpdb1/gpas/r/gpas-portal/lineages-voc",
+                "ENV_NAME": "DEV"
+            },
+            "production": {
+                "WORLD_URL": "https://portal.gpas.ox.ac.uk",
+                "ORDS_PATH": "/ords/grep/electron",
+                "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
+                "ENV_NAME": ""
+            },
+            "staging": {
+                "WORLD_URL": "https://portal.staging.gpas.ox.ac.uk",
+                "ORDS_PATH": "/ords/gpasuat/grep/electron",
+                "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
+                "ENV_NAME": "STAGE"
+            }
+        }
+        return(access_token, headers, environment_urls)
+
+    def _call_ords_userOrgDtls(self):
+        """Private method that calls ORDS to find out User Details
+
+        Returns
+        -------
+        user_name: str
+        user_organisation: str
+        permitted_tags: list
+        """
+        # build the API URL
+        url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/userOrgDtls'
+
+        # make the API call
+        a = requests.get(url=url, headers=self.headers)
+
+        # if it fails raise an Exception, otherwise parse the returned content
+        if not a.ok:
+            a.raise_for_status()
+        else:
+            result = json.loads(a.content)
+
+        # pull out the required fields
+        user_name = result['userOrgDtl'][0]['userName']
+        user_organisation = result['userOrgDtl'][0]['organisation']
+        permitted_tags = [i['tagName'] for i in result['userOrgDtl'][0]['tags']]
+
+        return(user_name, user_organisation, permitted_tags)
 
     def _convert_bams(self, run_parallel=False):
         """Private method that converts BAM files to FASTQ files.
@@ -547,3 +619,37 @@ class Batch:
                 }
             }
         }
+
+    def _call_ords_PAR(self):
+        """Private method that calls ORDS to get a Pre-Authenticated Request.
+
+        The PAR url is used to upload data to the Organisation's input bucket in OCI
+
+        Returns
+        -------
+        par: str
+        """
+        url = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/pars'
+
+        # make the API call
+        a = requests.get(url=url, headers=self.headers)
+
+        # if it fails raise an Exception, otherwise parse the returned content
+        if not a.ok:
+            a.raise_for_status()
+        else:
+            result = json.loads(a.content)
+
+        return result['par']
+
+
+    def submit(self):
+        """Submit the samples and their metadata to GPAS for processing.
+
+        The upload CSV must have successfully been validated and the BAM/FASTQ files decontaminated.
+        """
+        assert self.connect_to_oci, "can only submit samples on the command line if you have provided a valid token!"
+
+        par = self._call_ords_PAR()
+
+        print(par)

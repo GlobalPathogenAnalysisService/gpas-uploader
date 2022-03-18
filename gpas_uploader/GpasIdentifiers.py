@@ -30,6 +30,8 @@ def enc(n, a=a):
 def create_batch_name(fn):
     return enc(hash(fn))[:7]
 
+# def get_gpas_identifiers()
+
 
 def assign_gpas_identifiers(row, lookup):
 
