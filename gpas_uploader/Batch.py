@@ -644,7 +644,6 @@ class Batch:
 
         # now that the gpas identifiers have been assigned, we need to rename the
         # decontaminated FASTQ files
-
         if self.sequencing_platform == 'Illumina':
             self.df[['r1_uri', 'r2_uri']] = self.df.apply(rename_paired_fastq, axis=1)
         elif self.sequencing_platform == 'Nanopore':
@@ -756,6 +755,8 @@ class Batch:
 
         assert self.decontamination_successful, 'samples must first have been successfully decontaminated!'
 
+        self.submit_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
+
         headers = {}
         headers['Authorization'] = self.headers['Authorization']
         headers['Content-Type'] = 'application/octet-stream'
@@ -782,10 +783,10 @@ class Batch:
             samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
             counter+=1
 
-        self.submit_json = copy.deepcopy(self.decontamination_json)
-        self.submit_json['submission']['batch']['bucketName'] = bucket
-        self.submit_json['submission']['batch']['uploadedBy'] = self.user_name
-        self.submit_json['submission']['batch']['organisation'] = self.user_organisation
+        self.submit_json = copy.deepcopy(self.decontamination_json['submission'])
+        self.submit_json['batch']['bucket_name'] = bucket
+        self.submit_json['batch']['uploaded_by'] = self.user_name
+        self.submit_json['batch']['organisation'] = self.user_organisation
 
         # build the API URL
         url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/batches'
@@ -795,7 +796,8 @@ class Batch:
 
         # if it fails raise an Exception, otherwise parse the returned content
         if not a.ok:
-            print("unable to send APEX json, halting")
+
+            self.submit_errors.append(pandas.DataFrame([[None,'sending metadata JSON to ORDS failed']], columns=['sample_name', 'error_message']))
 
         else:
             # make the finalisation mark
@@ -804,6 +806,4 @@ class Batch:
             r = requests.put(url, headers=headers)
 
             if not r.ok:
-                print("unable to upload finalisation mark, halting")
-            else:
-                print("Done!")
+                self.submit_errors.append(pandas.DataFrame([[None,'uploading finalisation mark failed']], columns=['sample_name', 'error_message']))

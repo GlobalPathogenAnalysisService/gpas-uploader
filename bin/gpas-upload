@@ -95,7 +95,6 @@ if __name__ == "__main__":
             # run ReadItAndKeep on all the samples
             upload_csv.decontaminate(outdir=outdir, run_parallel=args.parallel)
 
-
             if not upload_csv.decontamination_successful:
 
                 if args.json:
