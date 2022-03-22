@@ -366,7 +366,6 @@ class Batch:
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
-                print(build_errors(err))
                 self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
@@ -629,8 +628,6 @@ class Batch:
         # now that the gpas identifiers have been assigned, we need to rename the
         # decontaminated FASTQ files
 
-
-
         if self.sequencing_platform == 'Illumina':
             self.df[['r1_uri', 'r2_uri']] = self.df.apply(rename_paired_fastq, axis=1)
         elif self.sequencing_platform == 'Nanopore':
@@ -642,7 +639,6 @@ class Batch:
 
             errors = []
             for idx,row in self.decontamination_errors.iterrows():
-                print(idx, row)
                 errors.append({"sample": row.sample_name, "error": row.error_message})
 
             self.decontamination_json  = { "submission": {
