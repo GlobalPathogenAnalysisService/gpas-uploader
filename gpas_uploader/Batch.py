@@ -12,6 +12,8 @@ import requests
 import pandas
 import pandera
 from pandarallel import pandarallel
+from tqdm.auto import tqdm
+tqdm.pandas()
 
 import gpas_uploader
 
@@ -180,6 +182,21 @@ def rename_paired_fastq(row):
     p2.rename(p2.parent / dest_file2)
 
     return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
+
+def upload_fastq_paired(row, url, headers):
+    if not row.uploaded:
+        r1 = requests.put(url + row.name + '.reads_1.fastq.gz', open(row['r1_uri'], 'rb'), headers=headers)
+        r2 = requests.put(url+ row.name + '.reads_2.fastq.gz', open(row['r2_uri'], 'rb'), headers=headers)
+        return (r1.ok and r2.ok)
+    else:
+        return True
+
+def upload_fastq_unpaired(row, url, headers):
+    if not row.uploaded:
+        r = requests.put(url + row.name + '.reads.fastq.gz', open(row['r_uri'], 'rb'), headers=headers)
+        return r.ok
+    else:
+        return True
 
 
 def check_files_exist(row, file_extension, wd):
@@ -739,6 +756,54 @@ class Batch:
 
         assert self.decontamination_successful, 'samples must first have been successfully decontaminated!'
 
+        headers = {}
+        headers['Authorization'] = self.headers['Authorization']
+        headers['Content-Type'] = 'application/octet-stream'
+
         par = self._call_ords_PAR()
 
-        print(par)
+        bucket = par.split('/')[-3]
+
+        assert len(bucket) == 32, "unable to extract bucket from PAR: "+bucket
+
+        url = par + self.gpas_batch + '/'
+
+        self.df['uploaded'] = False
+
+        counter = 0
+        samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
+
+        while samples_not_uploaded > 0 and counter < 3:
+
+            if self.sequencing_platform == 'Illumina':
+                self.df['uploaded'] = self.df.progress_apply(upload_fastq_paired, args=(url, headers,), axis=1)
+            else:
+                self.df['uploaded'] = self.df.progress_apply(upload_fastq_unpaired, args=(url, headers,), axis=1)
+            samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
+            counter+=1
+
+        self.submit_json = copy.deepcopy(self.decontamination_json)
+        self.submit_json['submission']['batch']['bucketName'] = bucket
+        self.submit_json['submission']['batch']['uploadedBy'] = self.user_name
+        self.submit_json['submission']['batch']['organisation'] = self.user_organisation
+
+        # build the API URL
+        url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/batches'
+
+        # make the API call
+        a = requests.post(url=url, json=self.submit_json, headers=self.headers)
+
+        # if it fails raise an Exception, otherwise parse the returned content
+        if not a.ok:
+            print("unable to send APEX json, halting")
+
+        else:
+            # make the finalisation mark
+            url = par + self.gpas_batch + '/upload_done.txt'
+
+            r = requests.put(url, headers=headers)
+
+            if not r.ok:
+                print("unable to upload finalisation mark, halting")
+            else:
+                print("Done!")

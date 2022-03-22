@@ -49,6 +49,9 @@ def assign_gpas_identifiers_oci(row, run_lookup, guid_lookup):
 def assign_gpas_identifiers_local(row, lookup):
 
     gpas_sample_name = str(uuid.uuid4())
-    gpas_run_number = lookup[row.run_number]
+    if row.run_number == '':
+        gpas_run_number = ''
+    else:
+        gpas_run_number = lookup[row.run_number]
 
     return pandas.Series([gpas_sample_name, gpas_run_number])

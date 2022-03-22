@@ -6,6 +6,7 @@ gpas-upload script
 
 import argparse, shutil
 from pathlib import Path
+import json
 import sys
 
 import pandas
@@ -30,6 +31,12 @@ import_args.add_argument("--dir", default='/tmp/')
 import_args.add_argument("--output_csv", default='sample_names.csv', help='the name of the CSV to store the local->GPAS (batch,run,sample) lookup table')
 import_args.add_argument("--reference_genome", default=None, help='the reference genome to pass to readItAndKeep')
 import_args.add_argument("upload_csv")
+
+submit_args = subparsers.add_parser("submit", help='submit the batch to GPAS')
+submit_args.add_argument("--dir", default='/tmp/')
+submit_args.add_argument("--output_csv", default='sample_names.csv', help='the name of the CSV to store the local->GPAS (batch,run,sample) lookup table')
+submit_args.add_argument("--reference_genome", default=None, help='the reference genome to pass to readItAndKeep')
+submit_args.add_argument("upload_csv")
 
 if __name__ == "__main__":
 
@@ -59,7 +66,7 @@ if __name__ == "__main__":
 
         sys.stdout.flush()
 
-    elif args.command == "decontaminate":
+    elif args.command in ["decontaminate", "submit"]:
 
         samplesheet = Path(args.upload_csv)
 
@@ -101,9 +108,9 @@ if __name__ == "__main__":
             else:
 
                 if args.json:
-                    print(upload_csv.decontamination_json)
+                    print(json.dumps(upload_csv.decontamination_json))
                 else:
-                    print("--> All files have been successfully decontaminated")
+                    print("--> All samples have been successfully decontaminated")
 
                 # to avoid overwriting a sample_names.csv, rename any existing
                 # file to sample_names.csv.001. If that also exists, instead rename
@@ -139,3 +146,11 @@ if __name__ == "__main__":
                 upload_csv.sample_sheet.to_csv(parent / args.output_csv, index=False)
 
         sys.stdout.flush()
+
+        if args.command == 'submit':
+
+            upload_csv.submit()
+
+            if args.json:
+                print(json.dumps(upload_csv.submit_json))
+                print("--> All samples have been successfully submitted to GPAS for processing")

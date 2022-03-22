@@ -2,6 +2,11 @@ import pytest, pathlib
 
 import gpas_uploader
 
+def test_nonASCII_upload_csv_fails():
+
+    with pytest.raises(Exception) as e_info:
+        validate.Batch("tests/files/bam-nanopore-samplesheet ~ - ! 'template-good.csv")
+
 def test_no_upload_csv_fails():
 
     with pytest.raises(Exception) as e_info:
