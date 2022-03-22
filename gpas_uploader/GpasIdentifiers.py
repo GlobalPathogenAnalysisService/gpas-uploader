@@ -30,10 +30,23 @@ def enc(n, a=a):
 def create_batch_name(fn):
     return enc(hash(fn))[:7]
 
-# def get_gpas_identifiers()
 
 
-def assign_gpas_identifiers(row, lookup):
+def assign_gpas_identifiers_oci(row, run_lookup, guid_lookup):
+    if pandas.isna(row.run_number) or row.run_number == '':
+        gpas_run_number = ""
+    else:
+        gpas_run_number = run_lookup[row.run_number]
+
+    if 'r_md5' in row.keys():
+        gpas_sample_name = guid_lookup[row['r_md5']]
+    else:
+        gpas_sample_name = guid_lookup[row['r1_md5']]
+
+    return pandas.Series([gpas_sample_name, gpas_run_number])
+
+
+def assign_gpas_identifiers_local(row, lookup):
 
     gpas_sample_name = str(uuid.uuid4())
     gpas_run_number = lookup[row.run_number]

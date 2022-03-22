@@ -1,4 +1,4 @@
 batch,run_number,sample_name,fastq1,fastq2,control,collection_date,tags,country,region,district,specimen_organism,host,instrument_platform,primer_scheme
-run1,run1.1,sample1,sample1_1.fastq.gz,sample1_2.fastq.gz,negative,2022-02-01,ENA_Data:HPRU,USA,Texas,1124,SARS-CoV-2,human,Illumina,auto
-run1,run1.2,sample2,sample2_1.fastq.gz,sample2_2.fastq.gz,,2022-03-01,HPRU,FRA,Finistère,,SARS-CoV-2,human,Illumina,auto
-run1,run1.2,sample3,sample3_1.fastq.gz,sample3_2.fastq.gz,positive,2022-03-08,ENA_Data,GBR,Oxfordshire,,SARS-CoV-2,human,Illumina,auto
+run1,,sample1,paired-sample-1_1.fastq.gz,paired-sample-1_2.fastq.gz,negative,2022-02-01,ENA_Data:HPRU,USA,Texas,1124,SARS-CoV-2,human,Illumina,auto
+run1,run1.2,sample2,paired-sample-2_1.fastq.gz,paired-sample-2_2.fastq.gz,,2022-03-01,HPRU,FRA,Finistère,,SARS-CoV-2,human,Illumina,auto
+run1,run1.2,sample3,paired-sample-3_1.fastq.gz,paired-sample-3_2.fastq.gz,positive,2022-03-08,ENA_Data,GBR,Oxfordshire,,SARS-CoV-2,human,Illumina,auto

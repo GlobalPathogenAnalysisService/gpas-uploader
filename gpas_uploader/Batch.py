@@ -2,6 +2,7 @@
 
 import json
 import copy
+import re
 import platform
 from pathlib import Path
 import hashlib
@@ -34,27 +35,6 @@ def hash_paired_reads(row, wd):
     fq2md5, fq2sha = hash_fastq(row.r2_uri)
     return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
 
-def hash_paired_reads2(row, wd):
-    """Calculate the MD5 and SHA hashes for two FASTQ files containing paired reads.
-
-    Designed to be used with pandas.DataFrame.apply
-
-    Parameters
-    ----------
-    row: pandas.Series
-        supplied by pandas.DataFrame.apply
-    wd: pathlib.Path
-        the working directory
-
-    Returns
-    -------
-    pandas.Series
-    """
-    fq1md5, fq1sha = hash_fastq(row.fastq1)
-    fq2md5, fq2sha = hash_fastq(row.fastq2)
-    return(pandas.Series([fq1md5, fq1sha, fq2md5, fq2sha]))
-
-
 
 def hash_unpaired_reads(row, wd):
     """Calculate the MD5 and SHA hashes for a FASTQ file containing unpaired reads.
@@ -72,24 +52,6 @@ def hash_unpaired_reads(row, wd):
     """
     fqmd5, fqsha = hash_fastq(row.r_uri)
     return(pandas.Series([fqmd5, fqsha]))
-
-def hash_unpaired_reads2(row, wd):
-    """Calculate the MD5 and SHA hashes for a FASTQ file containing unpaired reads.
-
-    Designed to be used with pandas.DataFrame.apply
-
-    Parameters
-    ----------
-    row: pandas.Series supplied by pandas.DataFrame.apply
-    wd: pathlib.Path of the working directory
-
-    Returns
-    -------
-    pandas.Series
-    """
-    fqmd5, fqsha = hash_fastq(row.fastq)
-    return(pandas.Series([fqmd5, fqsha]))
-
 
 
 def hash_fastq(filename):
@@ -248,6 +210,7 @@ def check_tags(row, allowed_tags):
             tags_ok = False
     return(tags_ok)
 
+
 class Batch:
     """
     Batch of FASTQ/BAM files for upload to GPAS
@@ -273,6 +236,8 @@ class Batch:
 
     """
     def __init__(self, upload_csv, token_file=None, environment='production', run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
+
+        assert re.match("^[A-Za-z0-9-_/.]+$", str(upload_csv)), "filename can only contain characters A-Za-z0-9-_."
 
         # instance variables
         self.upload_csv = Path(upload_csv)
@@ -308,13 +273,19 @@ class Batch:
             self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
 
         # number the runs 1,2,3..
-        self.run_numbers = list(self.df.run_number.unique())
         self.run_number_lookup = {}
-        for i in range(len(self.run_numbers)):
-            self.run_number_lookup[self.run_numbers[i]] = i
 
-        # if self.sequencing_platform == 'Illumina':
-        #     self.df[['f1_md5', 'f1_sha', 'f2_md5', 'f2_sha']] = self.df.apply(hash_paired_reads2, args=(self.wd,), axis=1)
+        # deal with case when they are all NaN
+        if self.df.run_number.isna().all():
+            self.run_number_lookup[''] = ''
+        else:
+            self.run_numbers = list(self.df.run_number.unique())
+
+            gpas_run = 1
+            for i in self.run_numbers:
+                if pandas.notna(i):
+                    self.run_number_lookup[i] = gpas_run
+                    gpas_run += 1
 
         # determine the current time and time zone
         currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
@@ -379,9 +350,9 @@ class Batch:
             a = a[['sample_name', 'error_message']]
             self.validation_errors = pandas.concat([self.validation_errors,a])
 
+        self.df.fillna(value={'run_number':'', 'control':'', 'region': '', 'district': ''}, inplace=True)
+
         self.validation_errors.set_index('sample_name', inplace=True)
-        self.df.reset_index(inplace=True)
-        self.df.set_index('sample_name', inplace=True)
 
         # no errors have been returned
         if len(self.validation_errors) == 0:
@@ -487,13 +458,17 @@ class Batch:
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
         if platform.system() == 'Windows' or run_parallel is False:
-
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
+                self.sequencing_platform = 'Illumina'
                 self.df[['fastq1', 'fastq2']] = self.df.apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
 
             elif self.df.instrument_platform.unique()[0] == 'Nanopore':
+                self.sequencing_platform = 'Nanopore'
                 self.df['fastq'] = self.df.apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
+
+            else:
+                raise gpas_uploader.GpasError("sequencing_platform not recognised!")
 
         else:
 
@@ -501,9 +476,11 @@ class Batch:
 
             # run samtools to produce paired/unpaired reads depending on the technology
             if self.df.instrument_platform.unique()[0] == 'Illumina':
+                self.sequencing_platform = 'Illumina'
                 self.df[['fastq1', 'fastq2']] = self.df.parallel_apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
 
             elif self.df.instrument_platform.unique()[0] == 'Nanopore':
+                self.sequencing_platform = 'Nanopore'
                 self.df['fastq'] = self.df.parallel_apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
 
         # now that we've added fastq column(s) we need to remove the bam column
@@ -582,21 +559,51 @@ class Batch:
                 }
             }
 
-            print(data)
-
             url = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/createSampleGuids'
 
             a = requests.post(url=url, data=json.dumps(data), headers=self.headers)
             result = json.loads(a.content)
-            print(result)
+            self.gpas_result = result
+            self.gpas_batch = self.gpas_result['batch']['guid']
+            self.df['gpas_batch'] = self.gpas_batch
+
+            guid_lookup = {}
+            for i in self.gpas_result['batch']['samples']:
+                guid_lookup[i['hash']] = i['guid']
+
+            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_oci, args=(self.run_number_lookup, guid_lookup,), axis=1)
 
         else:
             # create offline the assumed unique GPAS batch id and sample names
             self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
             self.df['gpas_batch'] = self.gpas_batch
-            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers, args=(self.run_number_lookup,), axis=1)
+            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_local, args=(self.run_number_lookup,), axis=1)
 
-        print(self.df)
+        # now that the gpas identifiers have been assigned, we need to rename the
+        # decontaminated FASTQ files
+
+        def rename_unpaired_fastq(row):
+
+            p = Path(row.r_uri)
+            dest_file = Path(row.gpas_sample_name + '.reads.fastq.gz')
+            p.rename(p.parent / dest_file)
+            return str(p.parent / dest_file)
+
+        def rename_paired_fastq(row):
+
+            p1, p2 = Path(row.r1_uri), Path(row.r2_uri)
+            dest_file1 = Path(row.gpas_sample_name + '.reads_1.fastq.gz')
+            dest_file2 = Path(row.gpas_sample_name + '.reads_2.fastq.gz')
+            p1.rename(p1.parent / dest_file1)
+            p2.rename(p2.parent / dest_file2)
+
+            return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
+
+
+        if self.sequencing_platform == 'Illumina':
+            self.df[['r1_uri', 'r2_uri']] = self.df.apply(rename_paired_fastq, axis=1)
+        elif self.sequencing_platform == 'Nanopore':
+            self.df['r_uri'] = self.df.apply(rename_unpaired_fastq, axis=1)
 
         if len(self.decontamination_errors)>0:
 

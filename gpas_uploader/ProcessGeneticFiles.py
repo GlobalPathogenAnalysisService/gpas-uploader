@@ -169,6 +169,7 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     str
         path to the decontaminated FASTQ file
     """
+
     if output_json:
         gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq)}, json=True)
 
@@ -193,7 +194,7 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
         "--reads1",
         wd / Path(row.fastq),
         "--outprefix",
-        str(outdir / row.name),
+        str(outdir / row.sample_name),
     ]
 
     process = subprocess.Popen(
@@ -208,7 +209,7 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     # successful completion
     assert process.returncode == 0, 'riak command failed'
 
-    fq = outdir / f"{row.name}.reads.fastq.gz"
+    fq = outdir / f"{row.sample_name}.reads.fastq.gz"
 
     if output_json:
         gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
@@ -261,7 +262,7 @@ def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
         "--reads2",
         wd / Path(row.fastq2),
         "--outprefix",
-        outdir / Path(row.name),
+        outdir / Path(row.sample_name),
     ]
 
     process = subprocess.Popen(
@@ -276,8 +277,8 @@ def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
     # successful completion
     assert process.returncode == 0, 'riak command failed'
 
-    fq1 = outdir / f"{row.name}.reads_1.fastq.gz"
-    fq2 = outdir / f"{row.name}.reads_2.fastq.gz"
+    fq1 = outdir / f"{row.sample_name}.reads_1.fastq.gz"
+    fq2 = outdir / f"{row.sample_name}.reads_2.fastq.gz"
 
     if output_json:
         gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
