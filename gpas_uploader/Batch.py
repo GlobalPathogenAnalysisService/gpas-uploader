@@ -685,7 +685,7 @@ class Batch:
 
         samples = []
         for idx,row in self.df.iterrows():
-            sample = {  "sample": idx,
+            sample = {  "name": idx,
                         "run_number": row.gpas_run_number,
                         "tags": row.tags.split(':'),
                         "control": row.control,
