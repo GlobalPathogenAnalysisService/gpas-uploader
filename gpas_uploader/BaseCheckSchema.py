@@ -47,7 +47,7 @@ class BaseCheckSchema(pandera.SchemaModel):
                                         nullable=True, coerce=True)
 
     # validate sample name is alphanumeric and insist it is unique
-    sample_name: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
+    sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9._-]+$',
                                      unique=True, coerce=True)
 
     # insist that control is one of positive, negative or null

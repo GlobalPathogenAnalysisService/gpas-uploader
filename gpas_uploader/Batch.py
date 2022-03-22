@@ -107,10 +107,12 @@ def format_error(row):
         return('unexpected column ' + row.failure_case + ' found in upload CSV')
     if row.check == 'column_in_dataframe':
         return('column ' + row.failure_case + ' missing from upload CSV')
+    elif row.check == 'region_is_valid':
+        return("specified regions are not valid ISO-3166-2 regions for the specified country")
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
-        return(row.failure_case + " is not a valid ISO-3166-2 region for the specified country")
+        return(row.failure_case + " is not a valid ISO-3166-2 region")
     elif row.column == 'control' and row.check[:4] == 'isin':
         return(row.failure_case + ' in the control field is not valid: field must be either empty or contain the one of the keywords positive or negative')
     elif row.column == 'host' and row.check[:4] == 'isin':
@@ -120,12 +122,12 @@ def format_error(row):
     elif row.column == 'primer_scheme' and row.check[:4] == 'isin':
         return(row.column + ' can only contain the keyword auto')
     elif row.column == 'instrument_platform':
-        if row.gpas_sample_name is None:
+        if row.sample_name is None:
             return(row.column + ' must be unique')
         if row.check[:4] == 'isin':
             return(row.column + ' can only contain one of the keywords Illumina or Nanopore')
     elif row.column == 'collection_date':
-        if row.gpas_sample_name is None:
+        if row.sample_name is None:
             return(row.column + ' must be in form YYYY-MM-DD and cannot include the time')
         if row.check[:4] == 'less':
             return(row.column + ' cannot be in the future')
@@ -336,6 +338,8 @@ class Batch:
 
         self.validation_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
 
+        self.df.set_index('sample_name', inplace=True)
+
         # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
         if 'bam' in self.df.columns:
 
@@ -362,6 +366,7 @@ class Batch:
             try:
                 gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
+                print(build_errors(err))
                 self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
 
         elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
@@ -377,6 +382,8 @@ class Batch:
                 gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
             except pandera.errors.SchemaErrors as err:
                 self.validation_errors = pandas.concat([self.validation_errors, build_errors(err)])
+
+        self.df.reset_index(inplace=True)
 
         if self.permitted_tags is not None:
             self.df['tags_ok'] = self.df.apply(check_tags, args=(self.permitted_tags,), axis=1)
@@ -536,6 +543,8 @@ class Batch:
 
         self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
 
+        self.df.set_index('sample_name', inplace=True)
+
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
         # Hence disable parallel processing for Windows for now
@@ -575,6 +584,8 @@ class Batch:
             files_ok, err = check_files_exist_in_df(fastq_files, 'r_uri', self.wd)
             if not files_ok:
                 self.decontamination_errors = pandas.concat([self.decontamination_errors,err])
+
+        self.df.reset_index(inplace=True)
 
         if self.connect_to_oci:
 
@@ -631,7 +642,8 @@ class Batch:
 
             errors = []
             for idx,row in self.decontamination_errors.iterrows():
-                errors.append({"sample": row.gpas_sample_name, "error": row.error_message})
+                print(idx, row)
+                errors.append({"sample": row.sample_name, "error": row.error_message})
 
             self.decontamination_json  = { "submission": {
                 "status": "failure",

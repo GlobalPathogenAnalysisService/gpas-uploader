@@ -61,7 +61,7 @@ but a validated JSON object can also be output (this is required for the Electro
 
 ```
 $ gpas-upload --json validate examples/illumina-fastq-upload.csv
-{'validation': {'status': 'completed', 'samples': [{'sample': '07c00741-e10c-4e29-92c4-c84212c96cd9', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': 'bddfc9c2-98eb-4188-ac06-df2cdbc5d397', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '811c8d25-5b1b-46fa-b539-bc18e9dd816a', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
+{'validation': {'status': 'completed', 'samples': [{'sample': '07c00741-e10c-4e29-92c4-c84212c96cd9', 'files': ['paired1_1.fastq.gz', 'paired1_2.fastq.gz']}, {'sample': 'bddfc9c2-98eb-4188-ac06-df2cdbc5d397', 'files': ['paired2_1.fastq.gz', 'paired2_2.fastq.gz']}, {'sample': '811c8d25-5b1b-46fa-b539-bc18e9dd816a', 'files': ['paired3_1.fastq.gz', 'paired3_2.fastq.gz']}]}}
 ```
 
 If the upload CSV specifies BAM files, then they will be automatically converted to FASTQ files using `samtools` in the background e.g.
@@ -84,18 +84,18 @@ Assuming the above is ok and does not return errors you can then ask for the fil
 
 ```
 (env) $ gpas-upload --json decontaminate examples/illumina-fastq-upload.csv
-{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_1.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_2.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_1.fastq.gz", "cleaned": "/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_2.fastq.gz", "cleaned": "/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_2.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_1.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_2.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_1.fastq.gz", "cleaned": "/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_2.fastq.gz", "cleaned": "/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_2.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_1.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_2.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_1.fastq.gz", "cleaned": "/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_2.fastq.gz", "cleaned": "/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired1_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired1_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired1_1.fastq.gz", "cleaned": "/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired1_2.fastq.gz", "cleaned": "/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired2_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired2_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired2_1.fastq.gz", "cleaned": "/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired2_2.fastq.gz", "cleaned": "/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired3_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired3_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired3_1.fastq.gz", "cleaned": "/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired3_2.fastq.gz", "cleaned": "/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_2.fastq.gz"}}
 {'submission': {'status': 'completed', 'batch': {'file_name': 'B-8R39222', 'uploaded_on': '2022-03-15T16:31:45.778Z+00:00', 'run_numbers': [0, 1], 'samples': [{'sample': '5d171088-9fd9-4e42-9ca8-d7a7d7186575', 'run_number': 0, 'tags': ['site0', 'repeat'], 'control': 'negative', 'collection_date': '2022-02-01', 'country': 'USA', 'region': 'Texas', 'district': '1124', 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}, {'sample': 'f11943e9-4382-4c79-8ce9-c94a70c42717', 'run_number': 1, 'tags': ['site0'], 'control': nan, 'collection_date': '2022-03-01', 'country': 'FRA', 'region': 'Finistère', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}, {'sample': '9cbb0dab-d47c-48ef-8c08-a72352156406', 'run_number': 1, 'tags': ['site0'], 'control': 'positive', 'collection_date': '2022-03-08', 'country': 'GBR', 'region': 'Oxfordshire', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}]}}}
 ```
 
@@ -140,24 +140,24 @@ So far so good
   
 ```
 (env) $ ./gpas-upload --json validate ../examples/illumina-bam-upload.csv
-{'validation': {'status': 'completed', 'samples': [{'sample': 'df27b4fc-7115-40cd-a044-b61a50e8f5d4', 'files': ['sample1_1.fastq.gz', 'sample1_2.fastq.gz']}, {'sample': '1bd082d2-4278-46b1-9b62-d9e08972c47d', 'files': ['sample2_1.fastq.gz', 'sample2_2.fastq.gz']}, {'sample': '1c742eb8-421b-47f7-a4eb-46717a341ed9', 'files': ['sample3_1.fastq.gz', 'sample3_2.fastq.gz']}]}}
+{'validation': {'status': 'completed', 'samples': [{'sample': 'df27b4fc-7115-40cd-a044-b61a50e8f5d4', 'files': ['paired1_1.fastq.gz', 'paired1_2.fastq.gz']}, {'sample': '1bd082d2-4278-46b1-9b62-d9e08972c47d', 'files': ['paired2_1.fastq.gz', 'paired2_2.fastq.gz']}, {'sample': '1c742eb8-421b-47f7-a4eb-46717a341ed9', 'files': ['paired3_1.fastq.gz', 'paired3_2.fastq.gz']}]}}
   ```
   
 Now a stringent test - decontaminating an upload CSV which specifies BAMs. This will therefore call both `samtools` and `ReadItAndKeep`.
  ```
 (env) $ ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
-{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_1.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "started", "file": "sample1_2.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_1.fastq.gz", "cleaned": "/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample1", "status": "completed", "file": "sample1_2.fastq.gz", "cleaned": "/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_2.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_1.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "started", "file": "sample2_2.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_1.fastq.gz", "cleaned": "/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample2", "status": "completed", "file": "sample2_2.fastq.gz", "cleaned": "/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_2.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_1.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "started", "file": "sample3_2.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_1.fastq.gz", "cleaned": "/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_1.fastq.gz"}}
-{"decontamination": {"sample": "sample3", "status": "completed", "file": "sample3_2.fastq.gz", "cleaned": "/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired1_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired1_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired1_1.fastq.gz", "cleaned": "/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired1_2.fastq.gz", "cleaned": "/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired2_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired2_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired2_1.fastq.gz", "cleaned": "/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired2_2.fastq.gz", "cleaned": "/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired3_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired3_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired3_1.fastq.gz", "cleaned": "/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired3_2.fastq.gz", "cleaned": "/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_2.fastq.gz"}}
 {'submission': {'status': 'completed', 'batch': {'file_name': 'B-9X3WMMF', 'uploaded_on': '2022-03-16T08:10:31.937Z+00:00', 'run_numbers': [0], 'samples': [{'sample': '399d56fa-dfda-4e62-9bdf-048dd243c422', 'run_number': 0, 'tags': ['site0', 'repeat'], 'control': 'negative', 'collection_date': '2022-02-01', 'country': 'USA', 'region': 'Texas', 'district': '1124', 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_1.fastq.gz', 'r1_md5': '70d2e71ef2a5bfdfb5e1e8615a36fedd', 'r2_uri': '/private/tmp/399d56fa-dfda-4e62-9bdf-048dd243c422.reads_2.fastq.gz', 'r2_md5': '51eec565569360fbe875bfd7b5ee8e68'}}, {'sample': 'e0055999-d05c-4d47-8819-c0dd3c29f2a7', 'run_number': 0, 'tags': ['site0'], 'control': nan, 'collection_date': '2022-03-01', 'country': 'FRA', 'region': 'Finistère', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_1.fastq.gz', 'r1_md5': '70d2e71ef2a5bfdfb5e1e8615a36fedd', 'r2_uri': '/private/tmp/e0055999-d05c-4d47-8819-c0dd3c29f2a7.reads_2.fastq.gz', 'r2_md5': '51eec565569360fbe875bfd7b5ee8e68'}}, {'sample': 'dfecc638-c09e-4c6c-971e-1119349bea96', 'run_number': 0, 'tags': ['site0'], 'control': nan, 'collection_date': '2022-03-09', 'country': 'GBR', 'region': 'Devon', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_1.fastq.gz', 'r1_md5': '70d2e71ef2a5bfdfb5e1e8615a36fedd', 'r2_uri': '/private/tmp/dfecc638-c09e-4c6c-971e-1119349bea96.reads_2.fastq.gz', 'r2_md5': '51eec565569360fbe875bfd7b5ee8e68'}}]}}}
 ```
 And finally a failing case
