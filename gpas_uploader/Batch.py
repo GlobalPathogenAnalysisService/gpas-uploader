@@ -143,6 +143,42 @@ def format_error(row):
     else:
         return("problem in "+ row.column + ' field')
 
+def rename_unpaired_fastq(row):
+    """Rename the unpaired FASTQ file with the GPAS sample name
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Returns
+    -------
+    str
+        path to the renamed FASTQ file
+    """
+
+    p = Path(row.r_uri)
+    dest_file = Path(row.gpas_sample_name + '.reads.fastq.gz')
+    p.rename(p.parent / dest_file)
+
+    return str(p.parent / dest_file)
+
+def rename_paired_fastq(row):
+    """Rename the paired FASTQ files with the GPAS sample name
+
+    Designed to be used with pandas.DataFrame.apply
+
+    Returns
+    -------
+    pandas.Series
+        paths to both renamed FASTQ files
+    """
+
+    p1, p2 = Path(row.r1_uri), Path(row.r2_uri)
+    dest_file1 = Path(row.gpas_sample_name + '.reads_1.fastq.gz')
+    dest_file2 = Path(row.gpas_sample_name + '.reads_2.fastq.gz')
+    p1.rename(p1.parent / dest_file1)
+    p2.rename(p2.parent / dest_file2)
+
+    return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
+
 
 def check_files_exist(row, file_extension, wd):
     """"Check if a genetic file exists.
@@ -582,22 +618,6 @@ class Batch:
         # now that the gpas identifiers have been assigned, we need to rename the
         # decontaminated FASTQ files
 
-        def rename_unpaired_fastq(row):
-
-            p = Path(row.r_uri)
-            dest_file = Path(row.gpas_sample_name + '.reads.fastq.gz')
-            p.rename(p.parent / dest_file)
-            return str(p.parent / dest_file)
-
-        def rename_paired_fastq(row):
-
-            p1, p2 = Path(row.r1_uri), Path(row.r2_uri)
-            dest_file1 = Path(row.gpas_sample_name + '.reads_1.fastq.gz')
-            dest_file2 = Path(row.gpas_sample_name + '.reads_2.fastq.gz')
-            p1.rename(p1.parent / dest_file1)
-            p2.rename(p2.parent / dest_file2)
-
-            return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
 
 
         if self.sequencing_platform == 'Illumina':
