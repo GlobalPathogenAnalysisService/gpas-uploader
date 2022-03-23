@@ -6,6 +6,7 @@ from .GpasIdentifiers import *
 from .ProcessGeneticFiles import *
 from .BaseCheckSchema import *
 from .UploadCheckSchema import *
+from .PandasApplyFunctions import *
 
 '''
 Use of semantic versioning, MAJOR.MINOR.MAINTAINANCE where
