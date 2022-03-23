@@ -559,6 +559,7 @@ class Batch:
                 }
             }
         }
+        )
 
 
     def _call_ords_PAR(self):
