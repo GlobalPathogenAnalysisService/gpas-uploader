@@ -297,20 +297,7 @@ class Batch:
         # so that the DataFrame doesn't fail validation
         self.df.drop(columns='bam', inplace=True)
 
-    def decontaminate(self, run_parallel=False, outdir=Path('/tmp/')):
-        """Remove personally identifiable genetic reads from the FASTQ files in the batch.
-
-        Parameters
-        ----------
-        outdir : str
-            the folder where to write the decontaminated FASTQ files (Default is /tmp)
-        run_parallel: bool
-            if True, run readItAndKeep in parallel using pandarallel (default False)
-        """
-
-        self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
-
-        self.df.set_index('sample_name', inplace=True)
+    def _run_riak(self,outdir,run_parallel=False):
 
         # From https://github.com/nalepae/pandarallel
         # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
@@ -333,6 +320,7 @@ class Batch:
             elif self.sequencing_platform == 'Illumina':
                 self.df[['r1_uri', 'r2_uri']] = self.df.parallel_apply(gpas_uploader.remove_pii_paired_reads, args=(self.reference_genome, self.wd, outdir, self.output_json), axis=1)
 
+    def _hash_fastqs(self):
 
         if self.sequencing_platform == 'Illumina':
 
@@ -352,38 +340,63 @@ class Batch:
             if not files_ok:
                 self.decontamination_errors = pandas.concat([self.decontamination_errors,err])
 
+    def _get_serverside_guids(self):
+
+        # first make a list of MD5s, one per sample
+        if self.sequencing_platform == 'Illumina':
+            md5s = list(self.df.r1_md5)
+        else:
+            md5s = list(self.df.r_md5)
+
+        # now build the data json object
+
+        data = {
+            "batch" : {
+                "organisation" : self.user_organisation,
+                "uploadedOn" : self.uploaded_on,
+                "uploadedBy" : self.user_name,
+                "samples" : md5s
+            }
+        }
+
+        url = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/createSampleGuids'
+
+        a = requests.post(url=url, data=json.dumps(data), headers=self.headers)
+        result = json.loads(a.content)
+        self.gpas_batch = result['batch']['guid']
+        self.df['gpas_batch'] = self.gpas_batch
+
+        guid_lookup = {}
+        for i in result['batch']['samples']:
+            guid_lookup[i['hash']] = i['guid']
+
+        return guid_lookup
+
+
+    def decontaminate(self, run_parallel=False, outdir=Path('/tmp/')):
+        """Remove personally identifiable genetic reads from the FASTQ files in the batch.
+
+        Parameters
+        ----------
+        outdir : str
+            the folder where to write the decontaminated FASTQ files (Default is /tmp)
+        run_parallel: bool
+            if True, run readItAndKeep in parallel using pandarallel (default False)
+        """
+
+        self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
+
+        self.df.set_index('sample_name', inplace=True)
+
+        self._run_riak(outdir, run_parallel=run_parallel)
+
+        self._hash_fastqs()
+
         self.df.reset_index(inplace=True)
 
         if self.connect_to_oci:
 
-            # first make a list of MD5s, one per sample
-            if self.sequencing_platform == 'Illumina':
-                md5s = list(self.df.r1_md5)
-            else:
-                md5s = list(self.df.r_md5)
-
-            # now build the data json object
-
-            data = {
-                "batch" : {
-                    "organisation" : self.user_organisation,
-                    "uploadedOn" : self.uploaded_on,
-                    "uploadedBy" : self.user_name,
-                    "samples" : md5s
-                }
-            }
-
-            url = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/createSampleGuids'
-
-            a = requests.post(url=url, data=json.dumps(data), headers=self.headers)
-            result = json.loads(a.content)
-            self.gpas_result = result
-            self.gpas_batch = self.gpas_result['batch']['guid']
-            self.df['gpas_batch'] = self.gpas_batch
-
-            guid_lookup = {}
-            for i in self.gpas_result['batch']['samples']:
-                guid_lookup[i['hash']] = i['guid']
+            guid_lookup = self._get_serverside_guids()
 
             self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_oci, args=(self.run_number_lookup, guid_lookup,), axis=1)
 
