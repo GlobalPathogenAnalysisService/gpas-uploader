@@ -69,29 +69,14 @@ class Batch:
         else:
             self.permitted_tags = None
 
-        if token_file is None:
-            self.connect_to_oci = False
-        else:
-            self.connect_to_oci = True
+        self.connect_to_oci = False if token_file is None else True
 
         if self.connect_to_oci:
             self.access_token, self.headers, self.environment_urls = self._parse_access_token(token_file)
             self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
 
         # number the runs 1,2,3..
-        self.run_number_lookup = {}
-
-        # deal with case when they are all NaN
-        if self.df.run_number.isna().all():
-            self.run_number_lookup[''] = ''
-        else:
-            self.run_numbers = list(self.df.run_number.unique())
-
-            gpas_run = 1
-            for i in self.run_numbers:
-                if pandas.notna(i):
-                    self.run_number_lookup[i] = gpas_run
-                    gpas_run += 1
+        self.run_number_lookup = self._infer_run_numbers()
 
         # determine the current time and time zone
         currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
@@ -110,45 +95,9 @@ class Batch:
 
         # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
         if 'bam' in self.df.columns:
+            self._convert_bams()
 
-            # check that the BAM files exist in the working directory
-            bam_files = copy.deepcopy(self.df[['bam']])
-            files_ok, err = gpas_uploader.check_files_exist_in_df(bam_files, 'bam', self.wd)
-
-            if files_ok:
-                self._convert_bams()
-            else:
-                # if the files don't exist, add to the errors DataFrame
-                self.validation_errors = pandas.concat([self.validation_errors,err])
-
-        # have to treat the upload CSV differently depending on whether it specifies
-        # paired or unpaired reads
-        if 'fastq' in self.df.columns:
-            self.sequencing_platform = 'Nanopore'
-
-            fastq_files = copy.deepcopy(self.df[['fastq']])
-            files_ok, err = gpas_uploader.check_files_exist_in_df(fastq_files, 'fastq', self.wd)
-            if not files_ok:
-                self.validation_errors = pandas.concat([self.validation_errors,err])
-
-            try:
-                gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
-            except pandera.errors.SchemaErrors as err:
-                self.validation_errors = pandas.concat([self.validation_errors, gpas_uploader.build_errors(err)])
-
-        elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
-            self.sequencing_platform = 'Illumina'
-
-            for i in ['fastq1', 'fastq2']:
-                fastq_files = copy.deepcopy(self.df[[i]])
-                files_ok, err = gpas_uploader.check_files_exist_in_df(fastq_files, i, self.wd)
-                if not files_ok:
-                    self.validation_errors = pandas.concat([self.validation_errors,err])
-
-            try:
-                gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
-            except pandera.errors.SchemaErrors as err:
-                self.validation_errors = pandas.concat([self.validation_errors, gpas_uploader.build_errors(err)])
+        self._apply_pandera_schema()
 
         self.df.reset_index(inplace=True)
 
@@ -186,6 +135,180 @@ class Batch:
                 errors.append({"sample": idx, "error": row.error_message})
 
             self.validation_json = {"validation": {"status": "failure", "samples": errors}}
+
+    def decontaminate(self, run_parallel=False, outdir=Path('/tmp/')):
+        """Remove personally identifiable genetic reads from the FASTQ files in the batch.
+
+        Parameters
+        ----------
+        outdir : str
+            the folder where to write the decontaminated FASTQ files (Default is /tmp)
+        run_parallel: bool
+            if True, run readItAndKeep in parallel using pandarallel (default False)
+        """
+
+        self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
+
+        self.df.set_index('sample_name', inplace=True)
+
+        self._run_riak(outdir, run_parallel=run_parallel)
+
+        self._hash_fastqs()
+
+        self.df.reset_index(inplace=True)
+
+        if self.connect_to_oci:
+
+            guid_lookup = self._get_serverside_guids()
+
+            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_oci, args=(self.run_number_lookup, guid_lookup,), axis=1)
+
+        else:
+            # create offline the assumed unique GPAS batch id and sample names
+            self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
+            self.df['gpas_batch'] = self.gpas_batch
+            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_local, args=(self.run_number_lookup,), axis=1)
+
+        # now that the gpas identifiers have been assigned, we need to rename the
+        # decontaminated FASTQ files
+        if self.sequencing_platform == 'Illumina':
+            self.df[['r1_uri', 'r2_uri']] = self.df.apply(gpas_uploader.rename_paired_fastq, axis=1)
+        elif self.sequencing_platform == 'Nanopore':
+            self.df['r_uri'] = self.df.apply(gpas_uploader.rename_unpaired_fastq, axis=1)
+
+        if len(self.decontamination_errors)>0:
+
+            self.decontamination_successful = False
+
+            errors = []
+            for idx,row in self.decontamination_errors.iterrows():
+                errors.append({"sample": row.sample_name, "error": row.error_message})
+
+            self.decontamination_json  = { "submission": {
+                "status": "failure",
+                "samples": errors } }
+        else:
+
+            self.decontamination_successful = True
+
+            # populate the post-decontamination JSON for passing to the Electron Client app
+            self.decontamination_json = self._build_submission()
+
+    def submit(self):
+        """Submit the samples and their metadata to GPAS for processing.
+
+        The upload CSV must have successfully been validated and the BAM/FASTQ files decontaminated.
+        """
+        assert self.connect_to_oci, "can only submit samples on the command line if you have provided a valid token!"
+
+        assert self.valid, 'the upload CSV must have been validated!'
+
+        assert self.decontamination_successful, 'samples must first have been successfully decontaminated!'
+
+        self.submit_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
+
+        headers = {}
+        headers['Authorization'] = self.headers['Authorization']
+        headers['Content-Type'] = 'application/octet-stream'
+
+        par = self._call_ords_PAR()
+
+        bucket = par.split('/')[-3]
+
+        assert len(bucket) == 32, "unable to extract bucket from PAR: "+bucket
+
+        url = par + self.gpas_batch + '/'
+
+        self.df['uploaded'] = False
+
+        counter = 0
+        samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
+
+        while samples_not_uploaded > 0 and counter < 3:
+
+            if self.sequencing_platform == 'Illumina':
+                self.df['uploaded'] = self.df.progress_apply(gpas_uploader.upload_fastq_paired, args=(url, headers,), axis=1)
+            else:
+                self.df['uploaded'] = self.df.progress_apply(gpas_uploader.upload_fastq_unpaired, args=(url, headers,), axis=1)
+            samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
+            counter+=1
+
+        self.submit_json = copy.deepcopy(self.decontamination_json['submission'])
+        self.submit_json['batch']['bucket_name'] = bucket
+        self.submit_json['batch']['uploaded_by'] = self.user_name
+        self.submit_json['batch']['organisation'] = self.user_organisation
+
+        # build the API URL
+        url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/batches'
+
+        # make the API call
+        a = requests.post(url=url, json=self.submit_json, headers=self.headers)
+
+        # if it fails raise an Exception, otherwise parse the returned content
+        if not a.ok:
+
+            self.submit_errors.append(pandas.DataFrame([[None,'sending metadata JSON to ORDS failed']], columns=['sample_name', 'error_message']))
+
+        else:
+            # make the finalisation mark
+            url = par + self.gpas_batch + '/upload_done.txt'
+
+            r = requests.put(url, headers=headers)
+
+            if not r.ok:
+                self.submit_errors.append(pandas.DataFrame([[None,'uploading finalisation mark failed']], columns=['sample_name', 'error_message']))
+
+
+    def _infer_run_numbers(self):
+
+        run_number_lookup = {}
+
+        # deal with case when they are all NaN
+        if self.df.run_number.isna().all():
+            run_number_lookup[''] = ''
+        else:
+            self.run_numbers = list(self.df.run_number.unique())
+
+            gpas_run = 1
+            for i in self.run_numbers:
+                if pandas.notna(i):
+                    run_number_lookup[i] = gpas_run
+                    gpas_run += 1
+
+        return run_number_lookup
+
+
+    def _apply_pandera_schema(self):
+
+        # have to treat the upload CSV differently depending on whether it specifies
+        # paired or unpaired reads
+        if 'fastq' in self.df.columns:
+            self.sequencing_platform = 'Nanopore'
+
+            fastq_files = copy.deepcopy(self.df[['fastq']])
+            files_ok, err = gpas_uploader.check_files_exist_in_df(fastq_files, 'fastq', self.wd)
+            if not files_ok:
+                self.validation_errors = pandas.concat([self.validation_errors,err])
+
+            try:
+                gpas_uploader.NanoporeFASTQCheckSchema.validate(self.df, lazy=True)
+            except pandera.errors.SchemaErrors as err:
+                self.validation_errors = pandas.concat([self.validation_errors, gpas_uploader.build_errors(err)])
+
+        elif 'fastq2' in self.df.columns and 'fastq1' in self.df.columns:
+            self.sequencing_platform = 'Illumina'
+
+            for i in ['fastq1', 'fastq2']:
+                fastq_files = copy.deepcopy(self.df[[i]])
+                files_ok, err = gpas_uploader.check_files_exist_in_df(fastq_files, i, self.wd)
+                if not files_ok:
+                    self.validation_errors = pandas.concat([self.validation_errors,err])
+
+            try:
+                gpas_uploader.IlluminaFASTQCheckSchema.validate(self.df, lazy=True)
+            except pandera.errors.SchemaErrors as err:
+                self.validation_errors = pandas.concat([self.validation_errors, gpas_uploader.build_errors(err)])
+
 
     def _parse_access_token(self, token_file):
         """Parse the provided access token and store its contents
@@ -264,38 +387,49 @@ class Batch:
             if True, run readItAndKeep in parallel using pandarallel (default False)
         """
 
-        # From https://github.com/nalepae/pandarallel
-        # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
-        # Hence disable parallel processing for Windows for now
-        if platform.system() == 'Windows' or run_parallel is False:
-            # run samtools to produce paired/unpaired reads depending on the technology
-            if self.df.instrument_platform.unique()[0] == 'Illumina':
-                self.sequencing_platform = 'Illumina'
-                self.df[['fastq1', 'fastq2']] = self.df.apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
+        # check that the BAM files exist in the working directory
+        bam_files = copy.deepcopy(self.df[['bam']])
+        files_ok, err = gpas_uploader.check_files_exist_in_df(bam_files, 'bam', self.wd)
 
-            elif self.df.instrument_platform.unique()[0] == 'Nanopore':
-                self.sequencing_platform = 'Nanopore'
-                self.df['fastq'] = self.df.apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
+        if not files_ok:
 
-            else:
-                raise gpas_uploader.GpasError("sequencing_platform not recognised!")
+            # if the files don't exist, add to the errors DataFrame
+            self.validation_errors = pandas.concat([self.validation_errors,err])
 
         else:
 
-            pandarallel.initialize(progress_bar=False, verbose=0)
+            # From https://github.com/nalepae/pandarallel
+            # "On Windows, Pandaral·lel will works only if the Python session is executed from Windows Subsystem for Linux (WSL)"
+            # Hence disable parallel processing for Windows for now
+            if platform.system() == 'Windows' or run_parallel is False:
+                # run samtools to produce paired/unpaired reads depending on the technology
+                if self.df.instrument_platform.unique()[0] == 'Illumina':
+                    self.sequencing_platform = 'Illumina'
+                    self.df[['fastq1', 'fastq2']] = self.df.apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
 
-            # run samtools to produce paired/unpaired reads depending on the technology
-            if self.df.instrument_platform.unique()[0] == 'Illumina':
-                self.sequencing_platform = 'Illumina'
-                self.df[['fastq1', 'fastq2']] = self.df.parallel_apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
+                elif self.df.instrument_platform.unique()[0] == 'Nanopore':
+                    self.sequencing_platform = 'Nanopore'
+                    self.df['fastq'] = self.df.apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
 
-            elif self.df.instrument_platform.unique()[0] == 'Nanopore':
-                self.sequencing_platform = 'Nanopore'
-                self.df['fastq'] = self.df.parallel_apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
+                else:
+                    raise gpas_uploader.GpasError("sequencing_platform not recognised!")
 
-        # now that we've added fastq column(s) we need to remove the bam column
-        # so that the DataFrame doesn't fail validation
-        self.df.drop(columns='bam', inplace=True)
+            else:
+
+                pandarallel.initialize(progress_bar=False, verbose=0)
+
+                # run samtools to produce paired/unpaired reads depending on the technology
+                if self.df.instrument_platform.unique()[0] == 'Illumina':
+                    self.sequencing_platform = 'Illumina'
+                    self.df[['fastq1', 'fastq2']] = self.df.parallel_apply(gpas_uploader.convert_bam_paired_reads, args=(self.wd,), axis=1)
+
+                elif self.df.instrument_platform.unique()[0] == 'Nanopore':
+                    self.sequencing_platform = 'Nanopore'
+                    self.df['fastq'] = self.df.parallel_apply(gpas_uploader.convert_bam_unpaired_reads, args=(self.wd,), axis=1)
+
+            # now that we've added fastq column(s) we need to remove the bam column
+            # so that the DataFrame doesn't fail validation
+            self.df.drop(columns='bam', inplace=True)
 
     def _run_riak(self,outdir,run_parallel=False):
 
@@ -373,64 +507,6 @@ class Batch:
         return guid_lookup
 
 
-    def decontaminate(self, run_parallel=False, outdir=Path('/tmp/')):
-        """Remove personally identifiable genetic reads from the FASTQ files in the batch.
-
-        Parameters
-        ----------
-        outdir : str
-            the folder where to write the decontaminated FASTQ files (Default is /tmp)
-        run_parallel: bool
-            if True, run readItAndKeep in parallel using pandarallel (default False)
-        """
-
-        self.decontamination_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
-
-        self.df.set_index('sample_name', inplace=True)
-
-        self._run_riak(outdir, run_parallel=run_parallel)
-
-        self._hash_fastqs()
-
-        self.df.reset_index(inplace=True)
-
-        if self.connect_to_oci:
-
-            guid_lookup = self._get_serverside_guids()
-
-            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_oci, args=(self.run_number_lookup, guid_lookup,), axis=1)
-
-        else:
-            # create offline the assumed unique GPAS batch id and sample names
-            self.gpas_batch = 'B-' + gpas_uploader.create_batch_name(self.upload_csv)
-            self.df['gpas_batch'] = self.gpas_batch
-            self.df[['gpas_sample_name', 'gpas_run_number']] = self.df.apply(gpas_uploader.assign_gpas_identifiers_local, args=(self.run_number_lookup,), axis=1)
-
-        # now that the gpas identifiers have been assigned, we need to rename the
-        # decontaminated FASTQ files
-        if self.sequencing_platform == 'Illumina':
-            self.df[['r1_uri', 'r2_uri']] = self.df.apply(gpas_uploader.rename_paired_fastq, axis=1)
-        elif self.sequencing_platform == 'Nanopore':
-            self.df['r_uri'] = self.df.apply(gpas_uploader.rename_unpaired_fastq, axis=1)
-
-        if len(self.decontamination_errors)>0:
-
-            self.decontamination_successful = False
-
-            errors = []
-            for idx,row in self.decontamination_errors.iterrows():
-                errors.append({"sample": row.sample_name, "error": row.error_message})
-
-            self.decontamination_json  = { "submission": {
-                "status": "failure",
-                "samples": errors } }
-        else:
-
-            self.decontamination_successful = True
-
-            # populate the post-decontamination JSON for passing to the Electron Client app
-            self.decontamination_json = self._build_submission()
-
     def _build_submission(self):
         """Prepare the JSON payload for the GPAS Upload app
 
@@ -506,68 +582,3 @@ class Batch:
             result = json.loads(a.content)
 
         return result['par']
-
-
-    def submit(self):
-        """Submit the samples and their metadata to GPAS for processing.
-
-        The upload CSV must have successfully been validated and the BAM/FASTQ files decontaminated.
-        """
-        assert self.connect_to_oci, "can only submit samples on the command line if you have provided a valid token!"
-
-        assert self.valid, 'the upload CSV must have been validated!'
-
-        assert self.decontamination_successful, 'samples must first have been successfully decontaminated!'
-
-        self.submit_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
-
-        headers = {}
-        headers['Authorization'] = self.headers['Authorization']
-        headers['Content-Type'] = 'application/octet-stream'
-
-        par = self._call_ords_PAR()
-
-        bucket = par.split('/')[-3]
-
-        assert len(bucket) == 32, "unable to extract bucket from PAR: "+bucket
-
-        url = par + self.gpas_batch + '/'
-
-        self.df['uploaded'] = False
-
-        counter = 0
-        samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
-
-        while samples_not_uploaded > 0 and counter < 3:
-
-            if self.sequencing_platform == 'Illumina':
-                self.df['uploaded'] = self.df.progress_apply(gpas_uploader.upload_fastq_paired, args=(url, headers,), axis=1)
-            else:
-                self.df['uploaded'] = self.df.progress_apply(gpas_uploader.upload_fastq_unpaired, args=(url, headers,), axis=1)
-            samples_not_uploaded = len(self.df.loc[~self.df['uploaded']])
-            counter+=1
-
-        self.submit_json = copy.deepcopy(self.decontamination_json['submission'])
-        self.submit_json['batch']['bucket_name'] = bucket
-        self.submit_json['batch']['uploaded_by'] = self.user_name
-        self.submit_json['batch']['organisation'] = self.user_organisation
-
-        # build the API URL
-        url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/batches'
-
-        # make the API call
-        a = requests.post(url=url, json=self.submit_json, headers=self.headers)
-
-        # if it fails raise an Exception, otherwise parse the returned content
-        if not a.ok:
-
-            self.submit_errors.append(pandas.DataFrame([[None,'sending metadata JSON to ORDS failed']], columns=['sample_name', 'error_message']))
-
-        else:
-            # make the finalisation mark
-            url = par + self.gpas_batch + '/upload_done.txt'
-
-            r = requests.put(url, headers=headers)
-
-            if not r.ok:
-                self.submit_errors.append(pandas.DataFrame([[None,'uploading finalisation mark failed']], columns=['sample_name', 'error_message']))
