@@ -6,7 +6,7 @@ Pathogen genetic sequencing data command line upload client for GPAS users.
 
 ## Installation
 
-To download `gpas-uploader`, create a virtual environment, activate it and install issue the following:
+To download `gpas-uploader`, create a virtual environment, activate it and install issue the following (note that if you are building a binary using `PyInstaller` please see the separate section below as that has different instructions to suppress a warning):
 
 ```
 $ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
@@ -98,13 +98,26 @@ Assuming the above is ok and does not return errors you can then ask for the fil
 {"decontamination": {"sample": "sample3", "status": "completed", "file": "paired3_2.fastq.gz", "cleaned": "/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_2.fastq.gz"}}
 {'submission': {'status': 'completed', 'batch': {'file_name': 'B-8R39222', 'uploaded_on': '2022-03-15T16:31:45.778Z+00:00', 'run_numbers': [0, 1], 'samples': [{'sample': '5d171088-9fd9-4e42-9ca8-d7a7d7186575', 'run_number': 0, 'tags': ['site0', 'repeat'], 'control': 'negative', 'collection_date': '2022-02-01', 'country': 'USA', 'region': 'Texas', 'district': '1124', 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/5d171088-9fd9-4e42-9ca8-d7a7d7186575.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}, {'sample': 'f11943e9-4382-4c79-8ce9-c94a70c42717', 'run_number': 1, 'tags': ['site0'], 'control': nan, 'collection_date': '2022-03-01', 'country': 'FRA', 'region': 'Finistère', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/f11943e9-4382-4c79-8ce9-c94a70c42717.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}, {'sample': '9cbb0dab-d47c-48ef-8c08-a72352156406', 'run_number': 1, 'tags': ['site0'], 'control': 'positive', 'collection_date': '2022-03-08', 'country': 'GBR', 'region': 'Oxfordshire', 'district': nan, 'specimen': 'SARS-CoV-2', 'host': 'human', 'instrument': {'platform': 'Illumina'}, 'primer_scheme': 'auto', 'pe_reads': {'r1_uri': '/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_1.fastq.gz', 'r1_md5': 'dda17843b08e1314e10d013287ac8fc8', 'r2_uri': '/private/tmp/9cbb0dab-d47c-48ef-8c08-a72352156406.reads_2.fastq.gz', 'r2_md5': '3e1cc358bfc061249e6f5e7504f4635d'}}]}}}
 ```
+### Submitting a batch to GPAS
+
+To be added ;-)
 
 ## Creating a single file for distribution
 
-This is necessary to package up `gpas-upload` inside the Electron Client. First we need to install `pyinstaller` in our virtual environment.
+This is necessary to package up `gpas-upload` inside the Electron Client. If we follow the regular installation process as above we will get a `pyarrow` warning that I can't suppress. Since `pyarrow` is required by `pandera` but we do not use its functionality, we can suppress its installation which avoids the warning. Hence we do the installation but have to manually specify the packages we need to avoid `pyarrow`.
 
 ```
-(env) $ pip install pyinstaller
+$ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
+$ cd gpas-uploader
+$ python3 -m venv env
+$ source env/bin/activate
+(env) $ pip install pandas pandarallel pycountry pytest typing_inspect wrapt pydantic pyinstaller
+(env) $ pip install --no-deps pandera
+```
+
+Then follow the same instructions for `samtools` and `read-it-and-keep` before running `PyInstaller` as
+
+```
 (env) $ python3 -m PyInstaller -F bin/gpas-upload
 ```
 
@@ -141,8 +154,9 @@ So far so good
 ```
 (env) $ ./gpas-upload --json validate ../examples/illumina-bam-upload.csv
 {'validation': {'status': 'completed', 'samples': [{'sample': 'df27b4fc-7115-40cd-a044-b61a50e8f5d4', 'files': ['paired1_1.fastq.gz', 'paired1_2.fastq.gz']}, {'sample': '1bd082d2-4278-46b1-9b62-d9e08972c47d', 'files': ['paired2_1.fastq.gz', 'paired2_2.fastq.gz']}, {'sample': '1c742eb8-421b-47f7-a4eb-46717a341ed9', 'files': ['paired3_1.fastq.gz', 'paired3_2.fastq.gz']}]}}
-  ```
+```
   
+ 
 Now a stringent test - decontaminating an upload CSV which specifies BAMs. This will therefore call both `samtools` and `ReadItAndKeep`.
  ```
 (env) $ ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
