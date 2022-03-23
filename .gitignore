@@ -6,6 +6,10 @@ __pycache__/
 .DS_Store
 
 sample_names.csv
+samtools*
+read-it-and-keep/
+readItAndKeep
+gpas-upload.spec
 
 # C extensions
 *.so
