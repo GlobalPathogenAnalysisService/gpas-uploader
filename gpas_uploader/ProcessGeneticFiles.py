@@ -133,7 +133,7 @@ def convert_bam_unpaired_reads(row, wd):
         [
             samtools,
             'fastq',
-            '-o',
+            '-0',
             wd / Path(stem + '.fastq.gz'),
             wd / Path(row['bam'])
         ],
@@ -169,8 +169,9 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     str
         path to the decontaminated FASTQ file
     """
+
     if output_json:
-        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq)}, json=True)
+        gpas_uploader.dmsg(row.name, "started", msg={"file": str(row.fastq)}, json=True)
 
     riak = locate_riak_binary()
 
@@ -211,7 +212,7 @@ def remove_pii_unpaired_reads(row, reference_genome, wd, outdir, output_json):
     fq = outdir / f"{row.name}.reads.fastq.gz"
 
     if output_json:
-        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
+        gpas_uploader.dmsg(row.name, "completed", msg={"file": str(row.fastq), "cleaned": str(fq)}, json=True)
 
     return(str(fq))
 
@@ -235,8 +236,8 @@ def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
         paths to the decontaminated pair of FASTQ files
     """
     if output_json:
-        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq1)}, json=True)
-        gpas_uploader.dmsg(row.sample_name, "started", msg={"file": str(row.fastq2)}, json=True)
+        gpas_uploader.dmsg(row.name, "started", msg={"file": str(row.fastq1)}, json=True)
+        gpas_uploader.dmsg(row.name, "started", msg={"file": str(row.fastq2)}, json=True)
 
     riak = locate_riak_binary()
 
@@ -280,7 +281,7 @@ def remove_pii_paired_reads(row, reference_genome, wd, outdir, output_json):
     fq2 = outdir / f"{row.name}.reads_2.fastq.gz"
 
     if output_json:
-        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
-        gpas_uploader.dmsg(row.sample_name, "completed", msg={"file": str(row.fastq2), 'cleaned': str(fq2)}, json=True)
+        gpas_uploader.dmsg(row.name, "completed", msg={"file": str(row.fastq1), 'cleaned': str(fq1)}, json=True)
+        gpas_uploader.dmsg(row.name, "completed", msg={"file": str(row.fastq2), 'cleaned': str(fq2)}, json=True)
 
     return(pandas.Series([str(fq1), str(fq2)]))

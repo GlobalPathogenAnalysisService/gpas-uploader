@@ -29,7 +29,7 @@ def test_riak_ok(tmp_path):
             '--ref_fasta',
             'gpas_uploader/MN908947_no_polyA.fasta',
             '--reads1',
-            'tests/files/sample1.fastq.gz',
+            'tests/files/unpaired1.fastq.gz',
             '--outprefix',
             tmp_path / pathlib.Path('foo')
         ],
@@ -58,7 +58,7 @@ def test_samtools_ok(tmp_path):
             'fastq',
             '-o',
             tmp_path / pathlib.Path('foo.fastq.gz'),
-            'tests/files/sample1.bam',
+            'tests/files/paired1.bam',
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
