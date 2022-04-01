@@ -43,7 +43,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     pandas.options.display.max_colwidth=150
 
-    assert args.output_csv[-4:] == '.csv'
 
     if args.command == "validate":
 
@@ -59,7 +58,7 @@ if __name__ == "__main__":
         upload_csv.validate()
 
         if args.json:
-            print(upload_csv.validation_json)
+            print(json.dumps(upload_csv.validation_json))
         else:
             if upload_csv.valid:
                 print("--> All preliminary checks pass and this upload CSV can be passed to the GPAS upload app")
@@ -70,6 +69,8 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     elif args.command in ["decontaminate", "submit"]:
+
+        assert args.output_csv[-4:] == '.csv'
 
         samplesheet = Path(args.upload_csv)
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         if not upload_csv.valid:
 
             if args.json:
-                print(upload_csv.validation_json)
+                print(json.dumps(upload_csv.validation_json))
             else:
                 print(upload_csv.validation_errors)
                 print("--> Please fix the above errors and try validating again. Do not pass this upload CSV to the GPAS upload client.")
@@ -101,7 +102,7 @@ if __name__ == "__main__":
             if not upload_csv.decontamination_successful:
 
                 if args.json:
-                    print(upload_csv.decontamination_json)
+                    print(json.dumps(upload_csv.decontamination_json))
                 else:
                     pandas.options.display.max_colwidth=100
                     print(upload_csv.decontamination_errors)

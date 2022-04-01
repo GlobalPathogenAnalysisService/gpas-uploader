@@ -2,8 +2,35 @@ import os
 
 import pandera
 from pandera.typing import Index, DataFrame, Series
+import pandera.extensions as extensions
+import pycountry
 
 from gpas_uploader import BaseCheckSchema
+
+
+@extensions.register_check_method()
+def region_is_valid(df):
+    """
+    Validate the region field using ISO-3166-2 (pycountry).
+
+    Returns
+    -------
+    bool
+        True if all regions are ok, False otherwise
+    """
+
+    def validate_region(row):
+        result = pycountry.countries.get(alpha_3=row.country)
+
+        if result is None:
+            return False
+        else:
+            region_lookup = [i.name for i in pycountry.subdivisions.get(country_code=result.alpha_2)]
+            return row.region in region_lookup
+
+    df['valid_region'] = df.apply(validate_region, axis=1)
+
+    return df['valid_region'].sum()
 
 
 class IlluminaFASTQCheckSchema(BaseCheckSchema):
@@ -11,21 +38,24 @@ class IlluminaFASTQCheckSchema(BaseCheckSchema):
     Validate GPAS upload CSVs specifying paired reads (e.g Illumina).
     '''
 
+    # gpas_batch: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+    #
+    # gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
+    #
+    # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+
     # validate that the fastq1 file is alphanumeric and unique
     fastq1: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_1.fastq.gz', coerce=True)
 
     # validate that the fastq2 file is alphanumeric and unique
     fastq2: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_2.fastq.gz', coerce=True)
 
-    # insist that the path to the fastq1 exists
-    # @pandera.check('fastq1')
-    # def check_file1_exists(cls, a, error='fastq1 file does not exist'):
-    #     return all(a.map(os.path.isfile))
-    #
-    # # insist that the path to the fastq2 exists
-    # @pandera.check('fastq2')
-    # def check_file2_exists(cls, a, error='fastq2 file does not exist'):
-    #     return all(a.map(os.path.isfile))
+    class Config:
+        region_is_valid = ()
+        name = "IlluminaFASTQCheckSchema"
+        strict = True
+        coerce = True
+
 
 
 class NanoporeFASTQCheckSchema(BaseCheckSchema):
@@ -33,19 +63,32 @@ class NanoporeFASTQCheckSchema(BaseCheckSchema):
     Validate GPAS upload CSVs specifying unpaired reads (e.g. Nanopore).
     '''
 
+    # gpas_batch: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+    #
+    # gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
+    #
+    # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+
     # validate that the fastq file is alphanumeric and unique
     fastq: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.fastq.gz', coerce=True)
 
-    # insist that the path to the fastq exists
-    # @pandera.check('fastq')
-    # def check_file_exists(cls, a, error='fastq file does not exist'):
-    #     return all(a.map(os.path.isfile))
+    class Config:
+        region_is_valid = ()
+        name = "NanoporeFASTQCheckSchema"
+        strict = True
+        coerce = True
 
 
 class BAMCheckSchema(BaseCheckSchema):
     '''
     Validate GPAS upload CSVs specifying BAM files.
     '''
+
+    # gpas_batch: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
+    #
+    # gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
+    #
+    # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # validate that the bam file is alphanumeric and unique
     bam: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.bam', coerce=True)
@@ -54,3 +97,9 @@ class BAMCheckSchema(BaseCheckSchema):
     # @pandera.check('bam_path')
     # def check_bam_file_exists(cls, a, error='bam file does not exist'):
     #     return all(a.map(os.path.isfile))
+
+    class Config:
+        region_is_valid = ()
+        name = "BAMCheckSchema"
+        strict = True
+        coerce = True

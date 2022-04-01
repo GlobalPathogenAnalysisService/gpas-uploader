@@ -75,9 +75,6 @@ class Batch:
             self.access_token, self.headers, self.environment_urls = self._parse_access_token(token_file)
             self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
 
-        # number the runs 1,2,3..
-        self.run_number_lookup = self._infer_run_numbers()
-
         # determine the current time and time zone
         currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
         tzStartIndex = len(currentTime) - 6
@@ -91,25 +88,45 @@ class Batch:
 
         self.validation_errors = pandas.DataFrame(None, columns=['sample_name', 'error_message'])
 
-        self.df.set_index('sample_name', inplace=True)
+        if len(self.df) == 0:
+            self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no samples in upload CSV']], columns=['sample_name', 'error_message'])])
+        elif 'sample_name' not in self.df.columns:
+            self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no sample_name column in upload CSV']], columns=['sample_name', 'error_message'])])
+        else:
 
-        # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
-        if 'bam' in self.df.columns:
-            self._convert_bams()
+            self.df.set_index('sample_name', inplace=True)
 
-        self._apply_pandera_schema()
+            try:
+                gpas_uploader.BaseCheckSchema.validate(self.df, lazy=True)
+            except pandera.errors.SchemaErrors as err:
+                self.validation_errors = pandas.concat([self.validation_errors, gpas_uploader.build_errors(err)])
 
-        self.df.reset_index(inplace=True)
+            self.df.reset_index(inplace=True)
 
-        if self.permitted_tags is not None:
-            self.df['tags_ok'] = self.df.apply(gpas_uploader.check_tags, args=(self.permitted_tags,), axis=1)
-            a = copy.deepcopy(self.df[~self.df['tags_ok']])
-            a['error_message'] = 'tags do not validate'
-            a.reset_index(inplace=True)
-            a = a[['sample_name', 'error_message']]
-            self.validation_errors = pandas.concat([self.validation_errors,a])
+        if len(self.validation_errors) == 0:
 
-        self.df.fillna(value={'run_number':'', 'control':'', 'region': '', 'district': ''}, inplace=True)
+            self.df.set_index('sample_name', inplace=True)
+
+            # number the runs 1,2,3..
+            self.run_number_lookup = self._infer_run_numbers()
+
+            # if the upload CSV contains BAMs, check they exist, then convert to FASTQ(s)
+            if 'bam' in self.df.columns:
+                self._convert_bams()
+
+            self._apply_pandera_schema()
+
+            self.df.reset_index(inplace=True)
+
+            if self.permitted_tags is not None:
+                self.df['tags_ok'] = self.df.apply(gpas_uploader.check_tags, args=(self.permitted_tags,), axis=1)
+                a = copy.deepcopy(self.df[~self.df['tags_ok']])
+                a['error_message'] = 'tags do not validate'
+                a.reset_index(inplace=True)
+                a = a[['sample_name', 'error_message']]
+                self.validation_errors = pandas.concat([self.validation_errors,a])
+
+            self.df.fillna(value={'run_number':'', 'control':'', 'region': '', 'district': ''}, inplace=True)
 
         self.validation_errors.set_index('sample_name', inplace=True)
 
@@ -118,11 +135,12 @@ class Batch:
 
             self.valid = True
             samples = []
+
             for idx,row in self.df.iterrows():
                 if self.sequencing_platform == 'Illumina':
-                    samples.append({"sample": idx, "files": [row.fastq1, row.fastq2]})
+                    samples.append({"sample": row.sample_name, "files": [row.fastq1, row.fastq2]})
                 else:
-                    samples.append({"sample": idx, "files": [row.fastq]})
+                    samples.append({"sample": row.sample_name, "files": [row.fastq]})
 
             self.validation_json = {"validation": {"status": "completed", "samples": samples}}
 

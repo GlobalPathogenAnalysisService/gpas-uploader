@@ -3,33 +3,9 @@ import datetime
 import pandas
 
 import pandera
-import pandera.extensions as extensions
 from pandera.typing import Index, DataFrame, Series
 import pycountry
 
-@extensions.register_check_method()
-def region_is_valid(df):
-    """
-    Validate the region field using ISO-3166-2 (pycountry).
-
-    Returns
-    -------
-    bool
-        True if all regions are ok, False otherwise
-    """
-
-    def validate_region(row):
-        result = pycountry.countries.get(alpha_3=row.country)
-
-        if result is None:
-            return False
-        else:
-            region_lookup = [i.name for i in pycountry.subdivisions.get(country_code=result.alpha_2)]
-            return row.region in region_lookup
-
-    df['valid_region'] = df.apply(validate_region, axis=1)
-
-    return df['valid_region'].sum()
 
 class BaseCheckSchema(pandera.SchemaModel):
     '''
@@ -83,12 +59,6 @@ class BaseCheckSchema(pandera.SchemaModel):
     # insist that instrument_platform can only be Illumina or Nanopore
     instrument_platform: Series[str] = pandera.Field(isin=['Illumina', 'Nanopore'], coerce=True )
 
-    # gpas_batch: Series[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
-
-    # gpas_run_number: Series[int] = pandera.Field(nullable=True, ge=0)
-
-    # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
-
     # custom method that checks that the collection_date is only the date and does not include the time
     # e.g. "2022-03-01" will pass but "2022-03-01 10:20:32" will fail
     @pandera.check("collection_date")
@@ -102,7 +72,6 @@ class BaseCheckSchema(pandera.SchemaModel):
 
 
     class Config:
-        region_is_valid = ()
         name = "BaseCheckSchema"
-        strict = True
+        strict = False
         coerce = True

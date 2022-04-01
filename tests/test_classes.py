@@ -108,11 +108,8 @@ def test_nanopore_bam_check_fails_1():
     # this spreadsheet is not valid!
     assert not a.valid
 
-    # there should be 11 different errors
-    assert len(a.validation_errors) == 8
-
-    # one of the errors applies to the whole sheet
-    assert len(a.validation_errors[a.validation_errors.index.isna()]) == 1
+    # there should be 7 different errors
+    assert len(a.validation_errors) == 7
 
 
 # check an upload CSV where batch is incorrectly called batch_name
@@ -124,6 +121,28 @@ def test_illumina_fastq_fail_1():
 
     # this spreadsheet is valid
     assert not a.valid
+
+# check an upload CSV where it has no header
+def test_illumina_fastq_fail_3():
+
+    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-3.csv')
+
+    a.validate()
+
+    # this spreadsheet is valid
+    assert not a.valid
+
+
+# check an upload CSV where there is a header but no samples
+def test_illumina_fastq_fail_4():
+
+    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-4.csv')
+
+    a.validate()
+
+    # this spreadsheet is valid
+    assert not a.valid
+
 
 def test_nanopore_bam_decontaminate_pass_1():
 
