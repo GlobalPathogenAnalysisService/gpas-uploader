@@ -42,6 +42,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     pandas.options.display.max_colwidth=150
+
+    assert args.output_csv[-4:] == '.csv'
+
     if args.command == "validate":
 
         samplesheet = Path(args.upload_csv)
@@ -107,7 +110,7 @@ if __name__ == "__main__":
             else:
 
                 if args.json:
-                    print(json.dumps(upload_csv.decontamination_json))
+                    print(upload_csv.decontamination_json)
                 else:
                     print("--> All samples have been successfully decontaminated")
 
@@ -119,19 +122,21 @@ if __name__ == "__main__":
                 # if a sample_names.csv already exists
                 if Path(parent / args.output_csv).exists():
 
+                    output_stem = args.output_csv.split('.csv')[0]
+
                     # find out how many backup files there are
-                    backup_files = parent.glob(args.output_csv + '.*')
+                    backup_files = parent.glob(output_stem + '.???.csv')
 
                     if len(list(backup_files)) == 0:
 
-                        shutil.move(parent / args.output_csv, str(parent / args.output_csv) + '.001')
+                        shutil.move(parent / args.output_csv, str(parent / output_stem) + '.001.csv')
 
                     else:
 
-                        backup_files = parent.glob(args.output_csv + '.*')
+                        backup_files = parent.glob(output_stem + '.???.csv')
 
                         # create a list of their numbers
-                        file_numbers = [ str(i).split(args.output_csv + '.')[1] for i in backup_files ]
+                        file_numbers = [ str(i).split(output_stem + '.')[1].split('.csv')[0] for i in backup_files ]
 
                         # what is the highest number?
                         highest_value = int(max(file_numbers))
@@ -139,7 +144,7 @@ if __name__ == "__main__":
                         # hence what is the new number?
                         next_value = "%03i" % (highest_value+1)
 
-                        shutil.move(parent / args.output_csv, str(parent / args.output_csv) + '.' + next_value)
+                        shutil.move(parent / args.output_csv, str(parent / output_stem) + '.' + next_value + '.csv')
 
                 # save the local -> GPAS (batch,run,sample) information
                 upload_csv.sample_sheet.to_csv(parent / args.output_csv, index=False)
