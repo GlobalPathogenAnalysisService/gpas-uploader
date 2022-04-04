@@ -90,10 +90,11 @@ class Batch:
 
         if len(self.df) == 0:
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no samples in upload CSV']], columns=['sample_name', 'error_message'])])
+
         elif 'sample_name' not in self.df.columns:
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no sample_name column in upload CSV']], columns=['sample_name', 'error_message'])])
-        else:
 
+        else:
             self.df.set_index('sample_name', inplace=True)
 
             try:
@@ -103,6 +104,7 @@ class Batch:
 
             self.df.reset_index(inplace=True)
 
+            # check tags are ok
             if self.permitted_tags is not None:
                 a = copy.deepcopy(self.df)
                 a['tags_ok'] = a.apply(gpas_uploader.check_tags, args=(self.permitted_tags,), axis=1)
@@ -567,7 +569,7 @@ class Batch:
                                       "md5": row.r_md5}
             samples.append(sample)
 
-        return json.dumps({
+        return {
             "submission": {
                 "status": "completed",
                 "batch": {
@@ -578,7 +580,7 @@ class Batch:
                 }
             }
         }
-        )
+
 
 
     def _call_ords_PAR(self):

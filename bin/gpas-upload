@@ -111,7 +111,7 @@ if __name__ == "__main__":
             else:
 
                 if args.json:
-                    print(upload_csv.decontamination_json)
+                    print(json.dumps(upload_csv.decontamination_json))
                 else:
                     print("--> All samples have been successfully decontaminated")
 

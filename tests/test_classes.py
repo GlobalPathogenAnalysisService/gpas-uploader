@@ -327,6 +327,47 @@ def test_illumina_fastq_fail_1():
 
     assert any(a.validation_errors['error_message'].str.contains('column batch missing from upload CSV'))
 
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "column batch missing from upload CSV"
+          }
+        ]
+      }
+    }
+
+# check an upload CSV where one of the pair of input FASTQ files is zero-byted
+def test_illumina_fastq_fail_2():
+
+    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-2.csv')
+
+    a.validate()
+
+    # this spreadsheet is valid
+    assert not a.valid
+
+    assert len(a.validation_errors) == 2
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample4",
+            "error": "sample4_1.fastq.gz does not exist"
+          },
+          {
+            "sample": "sample4",
+            "error": "sample4_2.fastq.gz does not exist"
+          }
+        ]
+      }
+    }
+
+
 # check an upload CSV where it has no header
 def test_illumina_fastq_fail_3():
 
@@ -337,6 +378,20 @@ def test_illumina_fastq_fail_3():
     # this spreadsheet is valid
     assert not a.valid
 
+    # because so much depends on sample_name it will only report this error
+    assert len(a.validation_errors) == 1
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "no sample_name column in upload CSV"
+          }
+        ]
+      }
+    }
 
 # check an upload CSV where there is a header but no samples
 def test_illumina_fastq_fail_4():
@@ -348,6 +403,20 @@ def test_illumina_fastq_fail_4():
     # this spreadsheet is valid
     assert not a.valid
 
+    # the code is smart enough to recognise this and report the specific case
+    assert len(a.validation_errors) == 1
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "no samples in upload CSV"
+          }
+        ]
+      }
+    }
 
 def test_nanopore_bam_decontaminate_pass_1():
 
@@ -371,15 +440,6 @@ def test_illumina_bam_decontaminate_pass_1():
     assert a.decontamination_successful
 
 
-# check an upload CSV where one of the pair of input FASTQ files is zero-byted
-def test_illumina_fastq_fail_1():
-
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-2.csv')
-
-    a.validate()
-
-    # this spreadsheet is valid
-    assert not a.valid
 
 # check an upload CSV where one of the pair of input FASTQ files is zero-byted
 def test_nanopore_fastq_fail_1():
@@ -391,6 +451,18 @@ def test_nanopore_fastq_fail_1():
     # this spreadsheet is valid
     assert not a.valid
 
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample4",
+            "error": "unpaired2.fastq.gz is too small (< 100 bytes)"
+          }
+        ]
+      }
+    }
+
 # check an upload CSV where one of the unpaired FASTQ files contains no SARS-CoV-2 reads so the resulting FASTQ file is empty
 def test_illumina_fastq_fail_1():
 
@@ -398,10 +470,44 @@ def test_illumina_fastq_fail_1():
 
     a.validate()
 
+    assert a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "completed",
+        "samples": [
+          {
+            "sample": "sample1",
+            "files": [
+              "unpaired1.fastq.gz"
+            ]
+          },
+          {
+            "sample": "sample5",
+            "files": [
+              "unpaired3.fastq.gz"
+            ]
+          }
+        ]
+      }
+    }
+
     a.decontaminate(run_parallel=True)
 
     # this spreadsheet is valid
     assert not a.decontamination_successful
+
+    assert a.decontamination_json == {
+      "submission": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample5",
+            "error": "/tmp/sample5.reads.fastq.gz is too small (< 100 bytes)"
+          }
+        ]
+      }
+    }
 
 def test_illumina_fastq_fail_2():
 
@@ -410,3 +516,15 @@ def test_illumina_fastq_fail_2():
     a.validate()
 
     assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample1",
+            "error": "tags do not validate"
+          }
+        ]
+      }
+    }
