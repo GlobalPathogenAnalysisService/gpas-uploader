@@ -5,16 +5,16 @@ import gpas_uploader
 def test_nonASCII_upload_csv_fails():
 
     with pytest.raises(Exception) as e_info:
-        validate.Batch("tests/files/bam-nanopore-samplesheet ~ - ! 'template-good.csv")
+        validate.UploadBatch("tests/files/bam-nanopore-samplesheet ~ - ! 'template-good.csv")
 
 def test_no_upload_csv_fails():
 
     with pytest.raises(Exception) as e_info:
-        validate.Batch('tests/files/none-existent-file.csv')
+        validate.UploadBatch('tests/files/none-existent-file.csv')
 
 def test_illumina_fastq_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-pass-1.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-pass-1.csv')
 
     assert a.instantiated
 
@@ -57,7 +57,7 @@ def test_illumina_fastq_pass_1():
 #  - the region is null
 def test_illumina_fastq_pass_2():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-pass-2.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-pass-2.csv')
 
     assert a.instantiated
 
@@ -98,7 +98,7 @@ def test_illumina_fastq_pass_2():
 
 def test_illumina_bam_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -138,7 +138,7 @@ def test_illumina_bam_pass_1():
 
 def test_nanopore_fastq_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-pass-1.csv')
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-pass-1.csv')
 
     assert a.instantiated
 
@@ -164,7 +164,7 @@ def test_nanopore_fastq_pass_1():
 
 def test_nanopore_bam_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -192,7 +192,7 @@ def test_nanopore_bam_pass_1():
 # all three samples also have empty control columns (allowed)
 def test_illumina_bam_instrument_notunique():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-fail-1.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-fail-1.csv')
 
     assert a.instantiated
 
@@ -220,7 +220,7 @@ def test_illumina_bam_instrument_notunique():
 
 def test_illumina_bam_files_donotexist():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-fail-2.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-fail-2.csv')
 
     assert a.instantiated
 
@@ -248,7 +248,7 @@ def test_illumina_bam_files_donotexist():
 
 def test_illumina_bam_files_zero_bytes():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-fail-3.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-fail-3.csv')
 
     assert a.instantiated
 
@@ -278,7 +278,7 @@ def test_illumina_bam_files_zero_bytes():
 
 def test_nanopore_bam_check_fails_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-fail-1.csv', tags_file='tests/files/tags.txt', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-1.csv', tags_file='tests/files/tags.txt', run_parallel=True)
 
     assert a.instantiated
 
@@ -332,7 +332,7 @@ def test_nanopore_bam_check_fails_1():
 
 def test_nanopore_bam_check_fails_2():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-fail-2.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-2.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -359,7 +359,7 @@ def test_nanopore_bam_check_fails_2():
 
 def test_nanopore_bam_check_fails_3():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-fail-3.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-3.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -419,7 +419,7 @@ def test_nanopore_bam_check_fails_3():
 # check an upload CSV where batch is incorrectly called batch_name
 def test_illumina_fastq_fail_1():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-1.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-1.csv')
 
     assert a.instantiated
 
@@ -448,7 +448,7 @@ def test_illumina_fastq_fail_1():
 # check an upload CSV where one of the pair of input FASTQ files is zero-byted
 def test_illumina_fastq_fail_2():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-2.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-2.csv')
 
     assert a.instantiated
 
@@ -479,7 +479,7 @@ def test_illumina_fastq_fail_2():
 # check an upload CSV where it has no header
 def test_illumina_fastq_fail_3():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-3.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-3.csv')
 
     assert a.instantiated
 
@@ -506,7 +506,7 @@ def test_illumina_fastq_fail_3():
 # check an upload CSV where there is a header but no samples
 def test_illumina_fastq_fail_4():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-4.csv')
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-4.csv')
 
     assert a.instantiated
 
@@ -533,7 +533,7 @@ def test_illumina_fastq_fail_4():
 # check an upload CSV which is not UTF-8 (this is UTF-16)
 def test_illumina_fastq_fail_5():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-5.csv', output_json=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-5.csv', output_json=True)
 
     # this spreadsheet is valid
     assert not a.instantiated
@@ -548,7 +548,7 @@ def test_illumina_fastq_fail_5():
 # check an upload CSV which does not exist!
 def test_illumina_fastq_fail_5():
 
-    a = gpas_uploader.Batch('tests/files/illumina-fastq-upload-csv-fail-5000.csv', output_json=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-5000.csv', output_json=True)
 
     # this spreadsheet is valid
     assert not a.instantiated
@@ -563,7 +563,7 @@ def test_illumina_fastq_fail_5():
 
 def test_nanopore_bam_decontaminate_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -576,7 +576,7 @@ def test_nanopore_bam_decontaminate_pass_1():
 
 def test_illumina_bam_decontaminate_pass_1():
 
-    a = gpas_uploader.Batch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
 
     assert a.instantiated
 
@@ -591,7 +591,7 @@ def test_illumina_bam_decontaminate_pass_1():
 # check an upload CSV where one of the pair of input FASTQ files is zero-byted
 def test_nanopore_fastq_fail_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-fail-1.csv')
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-1.csv')
 
     assert a.instantiated
 
@@ -615,7 +615,7 @@ def test_nanopore_fastq_fail_1():
 # check an upload CSV where one of the unpaired FASTQ files contains no SARS-CoV-2 reads so the resulting FASTQ file is empty
 def test_illumina_fastq_fail_1():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-fail-2.csv')
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-2.csv')
 
     assert a.instantiated
 
@@ -662,7 +662,7 @@ def test_illumina_fastq_fail_1():
 
 def test_illumina_fastq_fail_2():
 
-    a = gpas_uploader.Batch('tests/files/nanopore-fastq-upload-csv-pass-1.csv', tags_file='tests/files/badtags.txt')
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-pass-1.csv', tags_file='tests/files/badtags.txt')
 
     assert a.instantiated
 
