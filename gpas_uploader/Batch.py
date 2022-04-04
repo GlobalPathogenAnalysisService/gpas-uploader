@@ -103,6 +103,15 @@ class Batch:
 
             self.df.reset_index(inplace=True)
 
+            if self.permitted_tags is not None:
+                a = copy.deepcopy(self.df)
+                a['tags_ok'] = a.apply(gpas_uploader.check_tags, args=(self.permitted_tags,), axis=1)
+                a = a[~a['tags_ok']]
+                a['error_message'] = 'tags do not validate'
+                a.reset_index(inplace=True)
+                a = a[['sample_name', 'error_message']]
+                self.validation_errors = pandas.concat([self.validation_errors,a])
+
         if len(self.validation_errors) == 0:
 
             self.df.set_index('sample_name', inplace=True)
@@ -117,14 +126,6 @@ class Batch:
             self._apply_pandera_schema()
 
             self.df.reset_index(inplace=True)
-
-            if self.permitted_tags is not None:
-                self.df['tags_ok'] = self.df.apply(gpas_uploader.check_tags, args=(self.permitted_tags,), axis=1)
-                a = copy.deepcopy(self.df[~self.df['tags_ok']])
-                a['error_message'] = 'tags do not validate'
-                a.reset_index(inplace=True)
-                a = a[['sample_name', 'error_message']]
-                self.validation_errors = pandas.concat([self.validation_errors,a])
 
             self.df.fillna(value={'run_number':'', 'control':'', 'region': '', 'district': ''}, inplace=True)
 

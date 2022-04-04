@@ -1,6 +1,6 @@
 import os
 
-import pandera
+import pandera, pandas
 from pandera.typing import Index, DataFrame, Series
 import pandera.extensions as extensions
 import pycountry
@@ -24,13 +24,15 @@ def region_is_valid(df):
 
         if result is None:
             return False
+        elif pandas.isna(row.region) or row.region is None:
+            return True
         else:
             region_lookup = [i.name for i in pycountry.subdivisions.get(country_code=result.alpha_2)]
             return row.region in region_lookup
 
     df['valid_region'] = df.apply(validate_region, axis=1)
 
-    return df['valid_region'].sum()
+    return df['valid_region'].all()
 
 
 class IlluminaFASTQCheckSchema(BaseCheckSchema):
