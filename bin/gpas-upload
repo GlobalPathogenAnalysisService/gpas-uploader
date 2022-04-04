@@ -81,69 +81,70 @@ if __name__ == "__main__":
                     else:
                         print("--> All preliminary checks pass and this upload CSV can be passed to the GPAS upload app")
 
-                parent = Path(args.upload_csv).resolve().parent
-                outdir = Path(args.dir).resolve()
-
-                # run ReadItAndKeep on all the samples
-                upload_csv.decontaminate(outdir=outdir, run_parallel=args.parallel)
-
-                if not upload_csv.decontamination_successful:
-
-                    if args.json:
-                        print(json.dumps(upload_csv.decontamination_json))
-                    else:
-                        pandas.options.display.max_colwidth=100
-                        print(upload_csv.decontamination_errors)
-                        print("--> Please fix the above errors and try decontaminating again. Do not pass this upload CSV to the GPAS upload client.")
-
                 else:
+                    parent = Path(args.upload_csv).resolve().parent
+                    outdir = Path(args.dir).resolve()
 
-                    if args.json:
-                        print(json.dumps(upload_csv.decontamination_json))
-                    else:
-                        print("--> All samples have been successfully decontaminated")
+                    # run ReadItAndKeep on all the samples
+                    upload_csv.decontaminate(outdir=outdir, run_parallel=args.parallel)
 
-                    # to avoid overwriting a sample_names.csv, rename any existing
-                    # file to sample_names.csv.001. If that also exists, instead rename
-                    # to sample_names.csv.002, if that already exists sample_names.csv.003
-                    # and so on
+                    if not upload_csv.decontamination_successful:
 
-                    # if a sample_names.csv already exists
-                    if Path(parent / args.output_csv).exists():
-
-                        output_stem = args.output_csv.split('.csv')[0]
-
-                        # find out how many backup files there are
-                        backup_files = parent.glob(output_stem + '.???.csv')
-
-                        if len(list(backup_files)) == 0:
-
-                            shutil.move(parent / args.output_csv, str(parent / output_stem) + '.001.csv')
-
+                        if args.json:
+                            print(json.dumps(upload_csv.decontamination_json))
                         else:
+                            pandas.options.display.max_colwidth=100
+                            print(upload_csv.decontamination_errors)
+                            print("--> Please fix the above errors and try decontaminating again. Do not pass this upload CSV to the GPAS upload client.")
 
+                    else:
+
+                        if args.json:
+                            print(json.dumps(upload_csv.decontamination_json))
+                        else:
+                            print("--> All samples have been successfully decontaminated")
+
+                        # to avoid overwriting a sample_names.csv, rename any existing
+                        # file to sample_names.csv.001. If that also exists, instead rename
+                        # to sample_names.csv.002, if that already exists sample_names.csv.003
+                        # and so on
+
+                        # if a sample_names.csv already exists
+                        if Path(parent / args.output_csv).exists():
+
+                            output_stem = args.output_csv.split('.csv')[0]
+
+                            # find out how many backup files there are
                             backup_files = parent.glob(output_stem + '.???.csv')
 
-                            # create a list of their numbers
-                            file_numbers = [ str(i).split(output_stem + '.')[1].split('.csv')[0] for i in backup_files ]
+                            if len(list(backup_files)) == 0:
 
-                            # what is the highest number?
-                            highest_value = int(max(file_numbers))
+                                shutil.move(parent / args.output_csv, str(parent / output_stem) + '.001.csv')
 
-                            # hence what is the new number?
-                            next_value = "%03i" % (highest_value+1)
+                            else:
 
-                            shutil.move(parent / args.output_csv, str(parent / output_stem) + '.' + next_value + '.csv')
+                                backup_files = parent.glob(output_stem + '.???.csv')
 
-                    # save the local -> GPAS (batch,run,sample) information
-                    upload_csv.sample_sheet.to_csv(parent / args.output_csv, index=False)
+                                # create a list of their numbers
+                                file_numbers = [ str(i).split(output_stem + '.')[1].split('.csv')[0] for i in backup_files ]
 
-            sys.stdout.flush()
+                                # what is the highest number?
+                                highest_value = int(max(file_numbers))
 
-            if args.command == 'submit':
+                                # hence what is the new number?
+                                next_value = "%03i" % (highest_value+1)
 
-                upload_csv.submit()
+                                shutil.move(parent / args.output_csv, str(parent / output_stem) + '.' + next_value + '.csv')
 
-                if args.json:
-                    print(json.dumps(upload_csv.submit_json))
-                    print("--> All samples have been successfully submitted to GPAS for processing")
+                        # save the local -> GPAS (batch,run,sample) information
+                        upload_csv.sample_sheet.to_csv(parent / args.output_csv, index=False)
+
+                sys.stdout.flush()
+
+                if args.command == 'submit':
+
+                    upload_csv.submit()
+
+                    if args.json:
+                        print(json.dumps(upload_csv.submit_json))
+                        print("--> All samples have been successfully submitted to GPAS for processing")
