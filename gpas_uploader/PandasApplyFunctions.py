@@ -129,8 +129,10 @@ def format_error(row):
             return(row.column + ' must be unique in the upload CSV')
     elif row.check[:11] == 'str_matches':
         allowed_chars = row.check.split('[')[1].split(']')[0]
-        return row.column + ' can only contain characters (' + allowed_chars + ')'
-
+        if row.schema_context == 'Column':
+            return row.column + ' can only contain characters (' + allowed_chars + ')'
+        elif row.schema_context == 'Index':
+            return 'sample_name can only contain characters (' + allowed_chars + ')'
     if row.column is None:
         return("problem")
     else:

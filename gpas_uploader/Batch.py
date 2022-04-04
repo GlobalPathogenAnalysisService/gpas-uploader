@@ -3,6 +3,7 @@
 import json
 import copy
 import re
+import sys
 import platform
 from pathlib import Path
 import datetime
@@ -16,6 +17,12 @@ tqdm.pandas()
 
 import gpas_uploader
 
+def check_utf8(data):
+    try:
+        data.decode('utf-8')
+        return True
+    except UnicodeDecodeError:
+        return False
 
 class Batch:
     """
@@ -54,31 +61,47 @@ class Batch:
         assert environment in ['development', 'production', 'staging']
         self.environment = environment
 
-        # store the upload CSV internally as a pandas.DataFrame
-        self.df = pandas.read_csv(self.upload_csv, dtype=object)
+        if not self.upload_csv.is_file():
+            self.instantiated = False
+            if self.output_json:
+                self.instantiation_json = {"instantiation": {"status": "failure", "message": 'upload CSV does not exist'}}
 
-        # since we get the permitted tags from ORDS, do not allow a user to specify a tags_file if a token is supplied
-        assert not (token_file is not None and tags_file is not None), 'cannot specify both a tags file and an access token!'
-
-        # allow a user to specify a file containing tags to validate against
-        if tags_file is not None:
-            self.permitted_tags = set()
-            with open(tags_file, 'r') as INPUT:
-                for line in INPUT:
-                    self.permitted_tags.add(line.rstrip())
         else:
-            self.permitted_tags = None
+            self.instantiated = True
 
-        self.connect_to_oci = False if token_file is None else True
+            INPUT = open(self.upload_csv, 'rb')
+            data = INPUT.read()
+            if not check_utf8(data):
+                self.instantiation_json = {"instantiation": {"status": "failure", "message": 'upload CSV is not UTF-8'}}
+                self.instantiated = False
 
-        if self.connect_to_oci:
-            self.access_token, self.headers, self.environment_urls = self._parse_access_token(token_file)
-            self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
+            else:
 
-        # determine the current time and time zone
-        currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
-        tzStartIndex = len(currentTime) - 6
-        self.uploaded_on = currentTime[:tzStartIndex] + "Z" + currentTime[tzStartIndex:]
+                # store the upload CSV internally as a pandas.DataFrame
+                self.df = pandas.read_csv(self.upload_csv, encoding='utf-8', dtype=object)
+
+                # since we get the permitted tags from ORDS, do not allow a user to specify a tags_file if a token is supplied
+                assert not (token_file is not None and tags_file is not None), 'cannot specify both a tags file and an access token!'
+
+                # allow a user to specify a file containing tags to validate against
+                if tags_file is not None:
+                    self.permitted_tags = set()
+                    with open(tags_file, 'r') as INPUT:
+                        for line in INPUT:
+                            self.permitted_tags.add(line.rstrip())
+                else:
+                    self.permitted_tags = None
+
+                self.connect_to_oci = False if token_file is None else True
+
+                if self.connect_to_oci:
+                    self.access_token, self.headers, self.environment_urls = self._parse_access_token(token_file)
+                    self.user_name, self.user_organisation, self.permitted_tags = self._call_ords_userOrgDtls()
+
+                # determine the current time and time zone
+                currentTime = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='milliseconds')
+                tzStartIndex = len(currentTime) - 6
+                self.uploaded_on = currentTime[:tzStartIndex] + "Z" + currentTime[tzStartIndex:]
 
     def validate(self):
         """Validate the upload CSV.
