@@ -20,6 +20,19 @@ def dmsg(sample_name, error, msg=None, json=False, file=sys.stdout):
         file.flush()
 
 
+def dsmsg(sample_name, status, msg=None, json=False, file=sys.stdout):
+    if not msg:
+        msg = {}
+    payload = {"sample": sample_name, "status": status}
+    for k in msg:
+        payload[k] = msg[k]
+
+    if json:
+        print(
+            dumps({"state": payload}), file=file,
+        )
+        file.flush()
+
 def ddmsg(sample_name, file_type, msg=None, json=False, file=sys.stdout):
     if not msg:
         msg = {}

@@ -7,14 +7,27 @@ import gzip
 
 import pandas
 from tqdm.auto import tqdm
-tqdm.pandas()
 
 import gpas_uploader
 
 
 class DownloadBatch:
+    """
+    Query the status and download specified files for the samples given in a mapping CSV file.
 
-    def __init__(self, mapping_csv=None, token_file=None, environment='production', output_json=False):
+    Parameters
+    ----------
+    mapping_csv : filename
+        path to the mapping CSV produced by the upload app or command line tool
+    token_file : filename
+        path to the token.tok file downloaded from the GPAS portal
+    environment : str
+        which GPAS enviroment to query. Must be one of dev, stagin or prod.
+    output_json : bool
+        if True, write progress JSON messages to STDOUT
+    """
+
+    def __init__(self, mapping_csv=None, token_file=None, environment='prod', output_json=False):
 
         self.mapping_csv = pathlib.Path(mapping_csv)
         self.output_json = output_json
@@ -38,25 +51,45 @@ class DownloadBatch:
 
         self.access_token, self.headers, self.environment_urls = gpas_uploader.parse_access_token(token_file)
 
-    def get_status(self):
 
+    def get_status(self):
+        """Retrieve the status of the samples in the mapping CSV.
+
+        Adds a column called status to the internal pandas DataFrame with the status. If output_json is
+        set to True, also write out a message to STDOUT. Known statuses are
+          * Uploaded, Unreleased, Released, Error (all shown in the GPAS Portal)
+          * Authorization required (most likely indicating an invalid token was supplied)
+          * Sample not found (gpas_sample_name most likely incorrect)
+          * You do not have access to this sample
+          * Unhandled error logged for support
+        """
         url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
 
         url += '/get_sample_detail/'
 
         self.df['status'] = self.df.apply(self._get_sample_status, args=(url,), axis=1)
 
+
     def _get_sample_status(self, row, url):
 
         url += row.gpas_sample_name
-
         response = requests.get(url=url, headers=self.headers)
-
         if response.ok:
             result = json.loads(response.content)
+            status = result[0]['status']
+        elif response.status_code == 401:
+            status = "Authorization required"
+        elif 'message' in json.loads(response.text).keys():
+            status = json.loads(response.text)['message']
+            status = status.replace('.','')
+        else:
+            status = 'Unknown'
 
-            return(result[0]['status'])
-        
+        if self.output_json:
+            gpas_uploader.dsmsg(row.gpas_sample_name, status, json=True)
+
+        return status
+
 
     def download(self, filetype=None, outdir=None, rename=False):
         """Download the specified files (FASTA etc) using the mapping CSV
@@ -82,7 +115,12 @@ class DownloadBatch:
 
         output_dir = pathlib.Path(outdir)
 
-        self.df[filetype+'_downloaded'] = self.df.apply(self._download_file, args=(url, filetype, output_dir, rename), axis=1)
+        if not self.output_json:
+            tqdm.pandas(desc='downloading '+filetype)
+
+            self.df[filetype+'_downloaded'] = self.df.progress_apply(self._download_file, args=(url, filetype, output_dir, rename), axis=1)
+        else:
+            self.df[filetype+'_downloaded'] = self.df.apply(self._download_file, args=(url, filetype, output_dir, rename), axis=1)
 
 
     def _download_file(self, row, url, filetype, outdir, rename):
@@ -113,15 +151,13 @@ class DownloadBatch:
 
         if filetype + '_downloaded' in row.keys() and row[filetype + '_downloaded']:
             return True
-        else:
+        elif row.status in ['Unreleased', 'Released', 'Error']:
 
             response = requests.get(url=url, headers=self.headers)
 
             if not response.ok:
                 if self.output_json:
                     gpas_uploader.ddmsg(row.gpas_sample_name, filetype, json=True, msg={'status':'failure'})
-                else:
-                    print(row.gpas_sample_name, filetype, 'failed')
                 return False
             else:
                 if outdir is not None:
@@ -160,3 +196,5 @@ class DownloadBatch:
                     gpas_uploader.ddmsg(row.gpas_sample_name, filetype, json=True, msg={'status':'success'})
 
                 return True
+        else:
+            return False

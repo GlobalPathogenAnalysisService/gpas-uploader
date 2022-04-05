@@ -20,7 +20,7 @@ import gpas_uploader
 
 class UploadBatch:
     """
-    UploadBatch of FASTQ/BAM files for upload to GPAS
+    Batch of FASTQ/BAM files for upload to GPAS
 
     Parameters
     ----------
@@ -42,7 +42,7 @@ class UploadBatch:
     0
 
     """
-    def __init__(self, upload_csv, token_file=None, environment='production', run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
+    def __init__(self, upload_csv, token_file=None, environment='prod', run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
 
         assert re.match("^[A-Za-z0-9-_/.]+$", str(upload_csv)), "filename can only contain characters A-Za-z0-9-_."
 
@@ -52,7 +52,7 @@ class UploadBatch:
         self.output_json = output_json
         self.reference_genome = reference_genome
 
-        assert environment in ['development', 'production', 'staging']
+        assert environment in ['dev', 'prod', 'staging']
         self.environment = environment
 
         if not self.upload_csv.is_file():

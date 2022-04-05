@@ -23,13 +23,13 @@ def parse_access_token(token_file):
     access_token = token_payload['access_token']
     headers = {'Authorization': 'Bearer ' + access_token, 'Content-Type': 'application/json'}
     environment_urls = {
-        "development": {
+        "dev": {
             "WORLD_URL": "https://portal.dev.gpas.ox.ac.uk",
             "ORDS_PATH": "/ords/gpasdevpdb1/grep/electron",
             "DASHBOARD_PATH": "/ords/gpasdevpdb1/gpas/r/gpas-portal/lineages-voc",
             "ENV_NAME": "DEV"
         },
-        "production": {
+        "prod": {
             "WORLD_URL": "https://portal.gpas.ox.ac.uk",
             "ORDS_PATH": "/ords/grep/electron",
             "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",

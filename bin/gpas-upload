@@ -18,7 +18,7 @@ parser.add_argument("--parallel", action="store_true", default=False)
 parser.add_argument("--json", action="store_true", help="whether to write text or json to STDOUT")
 parser.add_argument("--tags", default=None, help='plaintext file of allowed tags with one tag per line')
 parser.add_argument("--token", default=None, help='the token.tok file downloaded from the GPAS user portal')
-parser.add_argument("--environment", default='development', help='which GPAS environment to use: development, staging or production')
+parser.add_argument("--environment", default='development', help='which GPAS environment to use: dev, staging or prod')
 subparsers = parser.add_subparsers(dest="command")
 
 validate_args = subparsers.add_parser(
@@ -40,8 +40,10 @@ submit_args.add_argument("upload_csv")
 
 download_args = subparsers.add_parser("download", help='download batch files from GPAS')
 download_args.add_argument("--dir", default='.')
-download_args.add_argument("--file_types", nargs='+')
+download_args.add_argument("--file_types", nargs='+', default=['fasta'], help='which files to download from fasta bam vcf json, default is fasta')
 download_args.add_argument("--rename", action="store_true", help="rename the downloaded files using the local_sample_name")
+download_args.add_argument("--dry_run", action="store_true", help="run but do not download the files")
+download_args.add_argument("--output_csv", help="if specified, save the modified mapping csv with this name")
 download_args.add_argument("mapping_csv", default='sample_names.csv')
 
 
@@ -158,11 +160,19 @@ if __name__ == "__main__":
 
     elif args.command == 'download':
 
+        if args.output_csv is not None:
+            assert not Path(args.output_csv).is_file(), 'specified output CSV already exists!'
+
         download_csv = gpas_uploader.DownloadBatch( mapping_csv=args.mapping_csv,
                                                     token_file=args.token,
                                                     output_json=args.json,
                                                     environment=args.environment )
 
-        for i in args.file_types:
+        download_csv.get_status()
 
-            download_csv.download(filetype=i, outdir=args.dir, rename=args.rename)
+        if not args.dry_run:
+            for i in args.file_types:
+                download_csv.download(filetype=i, outdir=args.dir, rename=args.rename)
+
+        if args.output_csv is not None:
+            download_csv.df.to_csv(args.output_csv)
