@@ -98,7 +98,7 @@ def test_illumina_fastq_pass_2():
 
 def test_illumina_bam_pass_1():
 
-    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=False)
 
     assert a.instantiated
 
@@ -164,7 +164,7 @@ def test_nanopore_fastq_pass_1():
 
 def test_nanopore_bam_pass_1():
 
-    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=False)
 
     assert a.instantiated
 
@@ -278,7 +278,7 @@ def test_illumina_bam_files_zero_bytes():
 
 def test_nanopore_bam_check_fails_1():
 
-    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-1.csv', tags_file='tests/files/tags.txt', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-1.csv', tags_file='tests/files/tags.txt', run_parallel=False)
 
     assert a.instantiated
 
@@ -332,7 +332,7 @@ def test_nanopore_bam_check_fails_1():
 
 def test_nanopore_bam_check_fails_2():
 
-    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-2.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-2.csv', run_parallel=False)
 
     assert a.instantiated
 
@@ -359,7 +359,7 @@ def test_nanopore_bam_check_fails_2():
 
 def test_nanopore_bam_check_fails_3():
 
-    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-3.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-fail-3.csv', run_parallel=False)
 
     assert a.instantiated
 
@@ -822,26 +822,26 @@ def test_illumina_fastq_fail_13():
 
 def test_nanopore_bam_decontaminate_pass_1():
 
-    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=False)
 
     assert a.instantiated
 
     a.validate()
 
-    a.decontaminate(run_parallel=True)
+    a.decontaminate(run_parallel=False)
 
     assert a.decontamination_successful
 
 
 def test_illumina_bam_decontaminate_pass_1():
 
-    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=True)
+    a = gpas_uploader.UploadBatch('tests/files/illumina-bam-upload-csv-pass-1.csv', run_parallel=False)
 
     assert a.instantiated
 
     a.validate()
 
-    a.decontaminate(run_parallel=True)
+    a.decontaminate(run_parallel=False)
 
     assert a.decontamination_successful
 
@@ -902,7 +902,7 @@ def test_nanopore_fastq_fail_2():
       }
     }
 
-    a.decontaminate(run_parallel=True)
+    a.decontaminate(run_parallel=False)
 
     # this spreadsheet is valid
     assert not a.decontamination_successful
