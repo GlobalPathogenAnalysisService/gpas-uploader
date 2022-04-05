@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-            os: [macos-latest, ubuntu-latest]
+            os: [macos-11, ubuntu-20.04, ubuntu-18.04, ubuntu-16.04, windows-2019, windows-2022]
 
     steps:
 
@@ -63,8 +63,8 @@ jobs:
         cd dist/
         ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
 
-    - name: Store dist
-      uses: actions/upload-artifact@v2
-      with:
-        name: gpas-upload-${{ matrix.os }}
-        path: dist/*
+    # - name: Store dist
+    #   uses: actions/upload-artifact@v2
+    #   with:
+    #     name: gpas-upload-${{ matrix.os }}
+    #     path: dist/*
