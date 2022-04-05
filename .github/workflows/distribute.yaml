@@ -6,6 +6,7 @@ jobs:
     name: Run Python Tests
     runs-on: ${{ matrix.os }}
     strategy:
+        fail-fast: false
         matrix:
             os: [macos-11, ubuntu-20.04, ubuntu-18.04, ubuntu-16.04, windows-2019, windows-2022]
 
