@@ -560,6 +560,55 @@ def test_illumina_fastq_fail_5():
       }
     }
 
+# check an upload CSV which has the countries spelt out long form
+def test_illumina_fastq_fail_6():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-6.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert len(a.validation_errors) == 3
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample1",
+            "error": "United States of America is not a valid ISO-3166-1 country"
+          },
+          {
+            "sample": "sample2",
+            "error": "France is not a valid ISO-3166-1 country"
+          },
+          {
+            "sample": "sample3",
+            "error": "United Kingdom is not a valid ISO-3166-1 country"
+          }
+        ]
+      }
+    }
+
+# check an upload CSV which has the host header deleted (but the sample rows correct)
+def test_illumina_fastq_fail_7():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-7.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    # there will be a cascade of errors so build the full list
+    errors = [i['error'] for i in a.validation_json['validation']['samples']]
+
+    # and check that the host missing error is included
+    assert 'column host missing from upload CSV' in errors
 
 def test_nanopore_bam_decontaminate_pass_1():
 
