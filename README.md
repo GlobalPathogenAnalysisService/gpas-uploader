@@ -169,7 +169,7 @@ $ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
 $ cd gpas-uploader
 $ python3 -m venv env
 $ source env/bin/activate
-(env) $ pip install pandas pandarallel pycountry pytest typing_inspect wrapt pydantic
+(env) $ pip install pandas pandarallel pycountry pytest requests typing_inspect wrapt pydantic
 (env) $ pip install --no-deps pandera
 ```
 
