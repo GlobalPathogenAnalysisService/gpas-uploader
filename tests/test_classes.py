@@ -640,7 +640,7 @@ def test_illumina_fastq_fail_8():
     }
 
 # check an upload CSV where lots of the fields are empty (but should not be)
-def test_illumina_fastq_fail_8():
+def test_illumina_fastq_fail_9():
 
     a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-9.csv', output_json=True)
 
@@ -720,6 +720,72 @@ def test_illumina_fastq_fail_10():
           {
             "sample": None,
             "error": "sample_name cannot be empty"
+          }
+        ]
+      }
+    }
+
+# check an upload CSV where sample_names is not unique
+def test_illumina_fastq_fail_11():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-11.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "sample_name must be unique"
+          }
+        ]
+      }
+    }
+
+# check an upload CSV where one pair of fastq files is not given and the other don't exist
+def test_illumina_fastq_fail_12():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-12.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample2",
+            "error": "fastq1 not specified"
+          },
+          {
+            "sample": "sample3",
+            "error": "paired30_1.fastq.gz does not exist"
+          },
+          {
+            "sample": "sample2",
+            "error": "fastq2 not specified"
+          },
+          {
+            "sample": "sample3",
+            "error": "paired30_2.fastq.gz does not exist"
+          },
+          {
+            "sample": "sample2",
+            "error": "fastq1 cannot be empty"
+          },
+          {
+            "sample": "sample2",
+            "error": "fastq2 cannot be empty"
           }
         ]
       }

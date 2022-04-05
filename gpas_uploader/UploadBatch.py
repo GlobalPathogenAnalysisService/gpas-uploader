@@ -137,6 +137,8 @@ class UploadBatch:
                 a = a[['sample_name', 'error_message']]
                 self.validation_errors = pandas.concat([self.validation_errors,a])
 
+        # errors = [i for i in self.validation_errors['error_message']]
+        # if not any(['sample_name' in i for i in errors]):
         if len(self.validation_errors) == 0:
 
             self.df.set_index('sample_name', inplace=True)

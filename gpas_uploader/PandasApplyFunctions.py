@@ -232,13 +232,17 @@ def check_files_exist(row, file_extension, wd):
     -------
     None or error message if file does not exist
     """
-    if not (wd / row[file_extension]).is_file():
-        return(row[file_extension] + ' does not exist')
-    else:
-        if (wd / row[file_extension]).stat().st_size < 100:
-            return(row[file_extension] + ' is too small (< 100 bytes)')
+    if isinstance(row[file_extension], str):
+        if not (wd / row[file_extension]).is_file():
+            return(row[file_extension] + ' does not exist')
         else:
-            return(None)
+            if (wd / row[file_extension]).stat().st_size < 100:
+                return(row[file_extension] + ' is too small (< 100 bytes)')
+            else:
+                return(None)
+    elif str(row[file_extension]) == 'nan':
+        return(file_extension + ' not specified')
+
 
 
 def check_files_exist_in_df(df, file_extension, wd):
