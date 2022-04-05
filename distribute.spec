@@ -20,26 +20,13 @@ a = Analysis(['bin/gpas-upload'],
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
-<<<<<<< HEAD
-#for d in a.binaries:
-#    if 'pyarrow' in d[0]:
-#        print("REMOVING "+d)
-#        a.binaries.remove(d)
-#        break
 
-
-=======
->>>>>>> sprint10
 exe = EXE(pyz,
           a.scripts,
           [('W ignore', None, 'OPTION')],
           a.binaries,
           a.zipfiles,
-<<<<<<< HEAD
           a.datas,
-=======
-          a.datas,  
->>>>>>> sprint10
           [],
           name='gpas-upload',
           debug=False,
