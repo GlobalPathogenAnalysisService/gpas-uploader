@@ -967,6 +967,29 @@ def test_nanopore_fastq_fail_4():
     }
 
 
+# check an upload CSV which is in the old format!
+def test_nanopore_fastq_fail_5():
+
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-5.csv')
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "upload CSV in old format; please provide in new format"
+          }
+        ]
+      }
+    }
+
 def test_illumina_fastq_fail_2():
 
     a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-pass-1.csv', tags_file='tests/files/badtags.txt')

@@ -25,18 +25,21 @@ def parse_access_token(token_file):
     environment_urls = {
         "dev": {
             "WORLD_URL": "https://portal.dev.gpas.ox.ac.uk",
+            "API_PATH": "/ords/gpasdevpdb1/gpas_pub/gpasapi",
             "ORDS_PATH": "/ords/gpasdevpdb1/grep/electron",
             "DASHBOARD_PATH": "/ords/gpasdevpdb1/gpas/r/gpas-portal/lineages-voc",
             "ENV_NAME": "DEV"
         },
         "prod": {
             "WORLD_URL": "https://portal.gpas.ox.ac.uk",
+            "API_PATH": "/ords/gpas_pub/gpasapi",
             "ORDS_PATH": "/ords/grep/electron",
             "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
             "ENV_NAME": ""
         },
         "staging": {
             "WORLD_URL": "https://portal.staging.gpas.ox.ac.uk",
+            "API_PATH": "/ords/gpasuat/gpas_pub/gpasapi",
             "ORDS_PATH": "/ords/gpasuat/grep/electron",
             "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
             "ENV_NAME": "STAGE"

@@ -1,0 +1,4 @@
+name,fastq,organisation,tags,specimenOrganism,host,collectionDate,country,submissionTitle,submissionDescription,instrument_platform,instrument_model,flowcell
+sample1,unpaired1.fastq.gz,University of Oxford,site0:repeat,SARS-CoV-2,human,2022-03-01,United Kingdom,testing GPAS,a unit test,Nanopore,GridION,96
+
+

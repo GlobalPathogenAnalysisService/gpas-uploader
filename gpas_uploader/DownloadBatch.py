@@ -31,6 +31,7 @@ class DownloadBatch:
 
         self.mapping_csv = pathlib.Path(mapping_csv)
         self.output_json = output_json
+        self.enviroment = environment
 
         assert self.mapping_csv.is_file, 'provided CSV does not exist!'
 
@@ -63,7 +64,8 @@ class DownloadBatch:
           * You do not have access to this sample
           * Unhandled error logged for support
         """
-        url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
+        url = self.environment_urls[self.enviroment]['WORLD_URL'] + self.environment_urls[self.enviroment]['API_PATH']
+        # url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
 
         url += '/get_sample_detail/'
 
@@ -109,7 +111,8 @@ class DownloadBatch:
         if self.mapping_csv_type == 'narrow':
             assert not rename, "cannot rename the files to the local_sample_name if you don't provide the full mapping CSV with six fields that is output by the GPAS upload app or command line tool"
 
-        url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
+        url = self.environment_urls[self.enviroment]['WORLD_URL'] + self.environment_urls[self.enviroment]['API_PATH']
+        # url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
 
         url += '/get_output/'
 
@@ -183,8 +186,9 @@ class DownloadBatch:
 
                 if filetype == 'fasta' and rename:
                     with gzip.open(filename, 'rb') as f:
+                        stem = filename.split('/')[-1].split('.fasta.gz')[0]
                         file_contents = f.readline()
-                        file_contents = b'>' + bytes(filename.split('.fasta.gz')[0], encoding='utf8') + b'|' + bytes(row.gpas_sample_name, encoding='utf8') + b'\n'
+                        file_contents = b'>' + bytes(stem, encoding='utf8') + b'|' + bytes(row.gpas_sample_name, encoding='utf8') + b'\n'
                         for line in f:
                             file_contents += line
 

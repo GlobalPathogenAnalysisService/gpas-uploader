@@ -108,6 +108,9 @@ class UploadBatch:
         if len(self.df) == 0:
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no samples in upload CSV']], columns=['sample_name', 'error_message'])])
 
+        elif 'name' in self.df.columns and 'specimenOrganism' in self.df.columns and 'collectionDate' in self.df.columns and 'submissionDescription' in self.df.columns and 'instrument_model' in self.df.columns:
+            self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'upload CSV in old format; please provide in new format']], columns=['sample_name', 'error_message'])])
+
         elif 'sample_name' not in self.df.columns:
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no sample_name column in upload CSV']], columns=['sample_name', 'error_message'])])
 
