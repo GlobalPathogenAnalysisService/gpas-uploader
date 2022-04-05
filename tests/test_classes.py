@@ -639,6 +639,68 @@ def test_illumina_fastq_fail_8():
       }
     }
 
+# check an upload CSV where lots of the fields are empty (but should not be)
+def test_illumina_fastq_fail_8():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-9.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample2",
+            "error": "batch cannot be empty"
+          },
+          {
+            "sample": "sample1",
+            "error": "collection_date cannot be empty"
+          },
+          {
+            "sample": None,
+            "error": "collection_date must be in form YYYY-MM-DD and cannot include the time"
+          },
+          {
+            "sample": "sample3",
+            "error": "country cannot be empty"
+          },
+          {
+            "sample": "sample1",
+            "error": "tags cannot be empty"
+          },
+          {
+            "sample": "sample2",
+            "error": "tags cannot be empty"
+          },
+          {
+            "sample": "sample1",
+            "error": "host cannot be empty"
+          },
+          {
+            "sample": "sample2",
+            "error": "specimen_organism cannot be empty"
+          },
+          {
+            "sample": "sample3",
+            "error": "primer_scheme cannot be empty"
+          },
+          {
+            "sample": "sample2",
+            "error": "instrument_platform cannot be empty"
+          },
+          {
+            "sample": None,
+            "error": "instrument_platform must be unique"
+          }
+        ]
+      }
+    }
 
 def test_nanopore_bam_decontaminate_pass_1():
 

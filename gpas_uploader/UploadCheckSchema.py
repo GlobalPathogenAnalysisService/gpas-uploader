@@ -57,7 +57,7 @@ class IlluminaFASTQCheckSchema(BaseCheckSchema):
     # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # validate that the fastq1 file is alphanumeric and unique
-    fastq1: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_1.fastq.gz', coerce=True)
+    fastq1: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_1.fastq.gz', coerce=True, nullable=False)
 
     # validate that the fastq2 file is alphanumeric and unique
     fastq2: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_2.fastq.gz', coerce=True)
