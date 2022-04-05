@@ -100,8 +100,66 @@ Assuming the above is ok and does not return errors you can then ask for the fil
 ```
 ### Submitting a batch to GPAS
 
-To be added ;-)
+There is now an additional subcommand `submit` that extends the `decontaminate` command (i.e. you do not have to run decontaminate first) and, through ORDS API calls, 
+* gets the user's name, organisation and allowed tags in that environment
+* posts the `md5sum` of the samples (one per sample i.e. for Illumina the `md5` for `fastq1` is passed) and gets in return the batch number and sample UUID4 (server-side GUIDs)
+* gets the PAR
+* posts the JSON object containing all the metadata to APEX
+* upload the FASTQ files
+* puts the finalisation mark (`upload_done.txt`) to trigger `dir_watcher.py`
 
+```
+$ gpas-upload --environment dev --token token.json --json submit examples/illumina-fastq-upload.csv
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired-sample-1_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "started", "file": "paired-sample-1_2.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired-sample-1_1.fastq.gz", "cleaned": "/private/tmp/sample1.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample1", "status": "completed", "file": "paired-sample-1_2.fastq.gz", "cleaned": "/private/tmp/sample1.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired-sample-2_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "started", "file": "paired-sample-2_2.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired-sample-2_1.fastq.gz", "cleaned": "/private/tmp/sample2.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample2", "status": "completed", "file": "paired-sample-2_2.fastq.gz", "cleaned": "/private/tmp/sample2.reads_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired-sample-3_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "started", "file": "paired-sample-3_2.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired-sample-3_1.fastq.gz", "cleaned": "/private/tmp/sample3.reads_1.fastq.gz"}}
+{"decontamination": {"sample": "sample3", "status": "completed", "file": "paired-sample-3_2.fastq.gz", "cleaned": "/private/tmp/sample3.reads_2.fastq.gz"}}
+{"submission": {"status": "completed", "batch": {"file_name": "E-22c843b9", "uploaded_on": "2022-04-05T15:32:24.562Z+01:00", "run_numbers": [1], "samples": [{"name": "9ca229e8-62e1-2282-d325-1be1b9072371", "run_number": "", "tags": ["ENA_Data", "HPRU"], "control": "negative", "collection_date": "2022-02-01", "country": "USA", "region": "Texas", "district": "1124", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/9ca229e8-62e1-2282-d325-1be1b9072371.reads_1.fastq.gz", "r1_md5": "4bc0e0396809c258c3df1bf2628b271b", "r2_uri": "/private/tmp/9ca229e8-62e1-2282-d325-1be1b9072371.reads_2.fastq.gz", "r2_md5": "ad948cba3bb22cd54c74ed5474c9772d"}}, {"name": "88b44b48-dd7b-2ea7-bfba-b293b01574e2", "run_number": 1, "tags": ["HPRU"], "control": "", "collection_date": "2022-03-01", "country": "FRA", "region": "Finist\u00e8re", "district": "", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/88b44b48-dd7b-2ea7-bfba-b293b01574e2.reads_1.fastq.gz", "r1_md5": "6e6814e2847b133b81e6f2a30f18d871", "r2_uri": "/private/tmp/88b44b48-dd7b-2ea7-bfba-b293b01574e2.reads_2.fastq.gz", "r2_md5": "52c201efcb09d0e0fc374d7122ecd29f"}}, {"name": "198af255-f94d-26ce-105f-92e2fca0477a", "run_number": 1, "tags": ["ENA_Data"], "control": "positive", "collection_date": "2022-03-08", "country": "GBR", "region": "Oxfordshire", "district": "", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/198af255-f94d-26ce-105f-92e2fca0477a.reads_1.fastq.gz", "r1_md5": "98aced37c7459a01cd5b1e44c1bd8023", "r2_uri": "/private/tmp/198af255-f94d-26ce-105f-92e2fca0477a.reads_2.fastq.gz", "r2_md5": "ffe943b47e953b264656286589b464af"}}]}}}
+100%|████████████████████████████████████████████████████████████████████████| 3/3 [00:05<00:00,  1.84s/it]
+{"status": "completed", "batch": {"file_name": "E-22c843b9", "uploaded_on": "2022-04-05T15:32:24.562Z+01:00", "run_numbers": [1], "samples": [{"name": "9ca229e8-62e1-2282-d325-1be1b9072371", "run_number": "", "tags": ["ENA_Data", "HPRU"], "control": "negative", "collection_date": "2022-02-01", "country": "USA", "region": "Texas", "district": "1124", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/9ca229e8-62e1-2282-d325-1be1b9072371.reads_1.fastq.gz", "r1_md5": "4bc0e0396809c258c3df1bf2628b271b", "r2_uri": "/private/tmp/9ca229e8-62e1-2282-d325-1be1b9072371.reads_2.fastq.gz", "r2_md5": "ad948cba3bb22cd54c74ed5474c9772d"}}, {"name": "88b44b48-dd7b-2ea7-bfba-b293b01574e2", "run_number": 1, "tags": ["HPRU"], "control": "", "collection_date": "2022-03-01", "country": "FRA", "region": "Finist\u00e8re", "district": "", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/88b44b48-dd7b-2ea7-bfba-b293b01574e2.reads_1.fastq.gz", "r1_md5": "6e6814e2847b133b81e6f2a30f18d871", "r2_uri": "/private/tmp/88b44b48-dd7b-2ea7-bfba-b293b01574e2.reads_2.fastq.gz", "r2_md5": "52c201efcb09d0e0fc374d7122ecd29f"}}, {"name": "198af255-f94d-26ce-105f-92e2fca0477a", "run_number": 1, "tags": ["ENA_Data"], "control": "positive", "collection_date": "2022-03-08", "country": "GBR", "region": "Oxfordshire", "district": "", "specimen": "SARS-CoV-2", "host": "human", "instrument": {"platform": "Illumina"}, "primer_scheme": "auto", "pe_reads": {"r1_uri": "/private/tmp/198af255-f94d-26ce-105f-92e2fca0477a.reads_1.fastq.gz", "r1_md5": "98aced37c7459a01cd5b1e44c1bd8023", "r2_uri": "/private/tmp/198af255-f94d-26ce-105f-92e2fca0477a.reads_2.fastq.gz", "r2_md5": "ffe943b47e953b264656286589b464af"}}], "bucket_name": "TLFgFoKopAxVfeANCwdEcakPVdMJfGqg", "uploaded_by": "PHILIP.FOWLER@NDM.OX.AC.UK", "organisation": "University of Oxford"}}
+--> All samples have been successfully submitted to GPAS for processing
+```
+
+### Checking the status of the samples in the batch and downloading the output files
+
+The above process will, by default, have written out the mappings between the local (batch,run,sample) identifiers to the deidentified GPAS equivalents in `samples_names.csv`. To query the status of the samples:
+
+```
+$ gpas-upload --environment dev --token token.json --json download examples/sample_names.csv --dry_run
+{"state": {"sample": "9ca229e8-62e1-2282-d325-1be1b9072371", "status": "Uploaded"}}
+{"state": {"sample": "88b44b48-dd7b-2ea7-bfba-b293b01574e2", "status": "Uploaded"}}
+{"state": {"sample": "198af255-f94d-26ce-105f-92e2fca0477a", "status": "Unreleased"}}
+```
+In the example above, one sample has finished running since it is now in `Unreleased` status, whilst the other two remain in `Uploaded` status. Once samples are in `Unreleased` or `Released` state the output files can be downloaded via
+
+```
+$ gpas-upload --environment dev --token token.json --json download examples/sample_names.csv --file_types bam vcf fasta
+```
+
+The `json` file cannot be downloaded until the new SARS-CoV-2 NextFlow pipeline is implemented in GPAS.
+
+Note that the downloaded files can be renamed with the local sample name so they match the FASTQ (assuming that was named using the local sample name) via
+
+```
+$ gpas-upload --environment dev --token token.json --json download examples/sample_names.csv --file_types bam vcf fasta --rename
+```
+
+This also automatically adds the local sample name to the header of the `fasta` file but keeps the GPAS GUID.
+
+Finally, the code will add columns recording the success of the download for each specified file type to the provided mapping CSV. If you provide a name the code will write this out as a CSV file
+
+```
+$ gpas-upload --environment dev --token token.json --json download examples/sample_names.csv --file_types bam vcf fasta --output_csv batch_1_status.csv
+```
+  
 ## Creating a single file for distribution
 
 This is necessary to package up `gpas-upload` inside the Electron Client. If we follow the regular installation process as above we will get a `pyarrow` warning that I can't suppress. Since `pyarrow` is required by `pandera` but we do not use its functionality, we can suppress its installation which avoids the warning. Hence we do the installation but have to manually specify the packages we need to avoid `pyarrow`.
@@ -111,7 +169,7 @@ $ git clone git@github.com:GenomePathogenAnalysisService/gpas-uploader.git
 $ cd gpas-uploader
 $ python3 -m venv env
 $ source env/bin/activate
-(env) $ pip install pandas pandarallel pycountry pytest typing_inspect wrapt pydantic
+(env) $ pip install pandas pandarallel pycountry pytest requests typing_inspect wrapt pydantic tqdm
 (env) $ pip install --no-deps pandera
 ```
 
@@ -197,4 +255,4 @@ You will need to make all bar the fasta file executable, which on a Mac will req
 
 Internally, this library uses the new `gpas_uploader.UploadBatch` class which stores the upload CSV as a `pandas.DataFrame`. Additional columns, e.g. the GPAS batch, run and sample identifiers, are added to this dataframe and much of the functionality is achieved using the `pandas.DataFrame.apply` pattern whereby a bespoke function is applied to each row of the dataframe in turn. This also then enables the use of `pandarallel` which allows `samtools` and `ReadItAndKeep` to be run in parallel on your local computer. Since this amounts to multiple `subprocess.Popen` commands being issued, scaling performance should be good. At present `pandarallel` autodetects the number of CPUs and ignores hyperthreading -- in principle additional speedup is possible by making using of threading. Note that this functionality is automatically disabled for Windows, although as noted in the comments, `pandarallel` can be run using the Windows Linux Subsytem.
 
-The simple `gpas-upload` script has been renamed to plan for the GPAS CLI at which point we anticipate moving to `gpas upload`. The provided `walkthrough.ipynb` shows how the `UploadBatch` class and its methods are used within `gpas-upload`.
+The simple `gpas-upload` script has been renamed to plan for the GPAS CLI at which point we anticipate moving to `gpas upload`. 
