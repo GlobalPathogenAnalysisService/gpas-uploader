@@ -101,8 +101,9 @@ def format_error(row):
     elif row.check == 'region_is_valid':
         return("specified regions are not valid ISO-3166-2 regions for the specified country")
     elif row.check == 'instrument_is_valid':
-        print(row)
         return 'FASTQ file columns and instrument_platform are inconsistent'
+    elif row.check == 'not_nullable':
+        return row.column + ' cannot be empty'
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
@@ -137,7 +138,6 @@ def format_error(row):
         elif row.schema_context == 'Index':
             return 'sample_name can only contain characters (' + allowed_chars + ')'
     if row.column is None:
-        print(row)
         return("problem")
     else:
         return("problem in "+ row.column + ' field')

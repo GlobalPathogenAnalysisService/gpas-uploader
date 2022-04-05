@@ -610,6 +610,36 @@ def test_illumina_fastq_fail_7():
     # and check that the host missing error is included
     assert 'column host missing from upload CSV' in errors
 
+# check an upload CSV where two of the three rows do not have any tags
+def test_illumina_fastq_fail_8():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-8.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert len(a.validation_errors) == 2
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample1",
+            "error": "tags cannot be empty"
+          },
+          {
+            "sample": "sample2",
+            "error": "tags cannot be empty"
+          }
+        ]
+      }
+    }
+
+
 def test_nanopore_bam_decontaminate_pass_1():
 
     a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
