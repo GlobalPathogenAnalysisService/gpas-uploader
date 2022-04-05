@@ -104,6 +104,8 @@ def format_error(row):
         return 'FASTQ file columns and instrument_platform are inconsistent'
     elif row.check == 'not_nullable':
         return row.column + ' cannot be empty'
+    elif row.check == 'field_uniqueness':
+        return row.column + ' must be unique in the upload CSV'
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
@@ -138,6 +140,7 @@ def format_error(row):
         elif row.schema_context == 'Index':
             return 'sample_name can only contain characters (' + allowed_chars + ')'
     if row.column is None:
+        print(row)
         return("problem")
     else:
         return("problem in "+ row.column + ' field')

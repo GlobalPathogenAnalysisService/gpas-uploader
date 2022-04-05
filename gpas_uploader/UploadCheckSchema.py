@@ -60,7 +60,7 @@ class IlluminaFASTQCheckSchema(BaseCheckSchema):
     fastq1: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_1.fastq.gz', coerce=True, nullable=False)
 
     # validate that the fastq2 file is alphanumeric and unique
-    fastq2: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_2.fastq.gz', coerce=True)
+    fastq2: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='_2.fastq.gz', coerce=True, nullable=False)
 
     class Config:
         region_is_valid = ()
@@ -83,7 +83,7 @@ class NanoporeFASTQCheckSchema(BaseCheckSchema):
     # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # validate that the fastq file is alphanumeric and unique
-    fastq: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.fastq.gz', coerce=True)
+    fastq: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.fastq.gz', coerce=True, nullable=False)
 
     class Config:
         region_is_valid = ()
@@ -105,7 +105,7 @@ class BAMCheckSchema(BaseCheckSchema):
     # gpas_sample_name: Index[str] = pandera.Field(str_matches=r'^[A-Za-z0-9]')
 
     # validate that the bam file is alphanumeric and unique
-    bam: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.bam', coerce=True)
+    bam: Series[str] = pandera.Field(unique=True, str_matches=r'^[A-Za-z0-9/._-]+$', str_endswith='.bam', coerce=True, nullable=False)
 
     # insist that the path to the bam exists
     # @pandera.check('bam_path')

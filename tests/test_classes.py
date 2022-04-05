@@ -702,6 +702,30 @@ def test_illumina_fastq_fail_8():
       }
     }
 
+# check an upload CSV where one of the sample_names is empty
+def test_illumina_fastq_fail_10():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-10.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "sample_name cannot be empty"
+          }
+        ]
+      }
+    }
+
+
 def test_nanopore_bam_decontaminate_pass_1():
 
     a = gpas_uploader.UploadBatch('tests/files/nanopore-bam-upload-csv-pass-1.csv', run_parallel=True)
