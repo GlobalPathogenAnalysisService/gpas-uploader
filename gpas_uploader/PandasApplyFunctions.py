@@ -94,6 +94,7 @@ def format_error(row):
     str
         error message, defaults to 'problem in <field_name> field'
     """
+
     if row.check == 'column_in_schema':
         return('unexpected column ' + row.failure_case + ' found in upload CSV')
     if row.check == 'column_in_dataframe':
@@ -106,6 +107,12 @@ def format_error(row):
         return row.column + ' cannot be empty'
     elif row.check == 'field_uniqueness':
         return row.column + ' must be unique in the upload CSV'
+    elif 'str_matches' in row.check:
+        allowed_chars = row.check.split('[')[1].split(']')[0]
+        if row.schema_context == 'Column':
+            return(row.column + ' can only contain characters (' + allowed_chars + ')')
+        elif row.schema_context == 'Index':
+            return('sample_name can only contain characters (' + allowed_chars + ')')
     elif row.column == 'country' and row.check[:4] == 'isin':
         return(row.failure_case + " is not a valid ISO-3166-1 country")
     elif row.column == 'region' and row.check[:4] == 'isin':
@@ -133,14 +140,7 @@ def format_error(row):
     elif row.column in ['fastq1', 'fastq2', 'fastq']:
         if row.check == 'field_uniqueness':
             return(row.column + ' must be unique in the upload CSV')
-    elif row.check[:11] == 'str_matches':
-        allowed_chars = row.check.split('[')[1].split(']')[0]
-        if row.schema_context == 'Column':
-            return row.column + ' can only contain characters (' + allowed_chars + ')'
-        elif row.schema_context == 'Index':
-            return 'sample_name can only contain characters (' + allowed_chars + ')'
-    if row.column is None:
-        print(row)
+    elif row.column is None:
         return("problem")
     else:
         return("problem in "+ row.column + ' field')

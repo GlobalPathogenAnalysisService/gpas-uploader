@@ -791,6 +791,34 @@ def test_illumina_fastq_fail_12():
       }
     }
 
+# check an upload CSV where two fastq files exist but use disallowed characters
+def test_illumina_fastq_fail_13():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-13.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample2",
+            "error": "fastq1 can only contain characters (A-Za-z0-9/._-)"
+          },
+          {
+            "sample": "sample3",
+            "error": "fastq1 can only contain characters (A-Za-z0-9/._-)"
+          }
+        ]
+      }
+    }
+
+
 
 def test_nanopore_bam_decontaminate_pass_1():
 
