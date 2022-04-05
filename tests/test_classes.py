@@ -613,7 +613,7 @@ def test_nanopore_fastq_fail_1():
     }
 
 # check an upload CSV where one of the unpaired FASTQ files contains no SARS-CoV-2 reads so the resulting FASTQ file is empty
-def test_illumina_fastq_fail_1():
+def test_nanopore_fastq_fail_2():
 
     a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-2.csv')
 
@@ -659,6 +659,54 @@ def test_illumina_fastq_fail_1():
         ]
       }
     }
+
+# check an upload CSV which has inconsistent fastq and instruments, here fastq and Illumina
+def test_nanopore_fastq_fail_3():
+
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-3.csv')
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "FASTQ file columns and instrument_platform are inconsistent"
+          }
+        ]
+      }
+    }
+
+
+# check an upload CSV which has inconsistent fastq and instruments e.g. fastq1,fastq2 and Nanopore
+def test_nanopore_fastq_fail_4():
+
+    a = gpas_uploader.UploadBatch('tests/files/nanopore-fastq-upload-csv-fail-4.csv')
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": None,
+            "error": "FASTQ file columns and instrument_platform are inconsistent"
+          }
+        ]
+      }
+    }
+
 
 def test_illumina_fastq_fail_2():
 

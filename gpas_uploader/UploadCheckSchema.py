@@ -34,6 +34,16 @@ def region_is_valid(df):
 
     return df['valid_region'].all()
 
+@extensions.register_check_method()
+def instrument_is_valid(df):
+
+    if 'fastq' in df.columns:
+        instrument = 'Nanopore'
+    elif 'fastq2' in df.columns:
+        instrument = 'Illumina'
+
+    return (df['instrument_platform'] == instrument).all()
+
 
 class IlluminaFASTQCheckSchema(BaseCheckSchema):
     '''
@@ -54,6 +64,7 @@ class IlluminaFASTQCheckSchema(BaseCheckSchema):
 
     class Config:
         region_is_valid = ()
+        instrument_is_valid = ()
         name = "IlluminaFASTQCheckSchema"
         strict = True
         coerce = True
@@ -76,6 +87,7 @@ class NanoporeFASTQCheckSchema(BaseCheckSchema):
 
     class Config:
         region_is_valid = ()
+        instrument_is_valid = ()
         name = "NanoporeFASTQCheckSchema"
         strict = True
         coerce = True

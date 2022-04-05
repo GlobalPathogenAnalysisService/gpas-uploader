@@ -18,7 +18,7 @@ parser.add_argument("--parallel", action="store_true", default=False)
 parser.add_argument("--json", action="store_true", help="whether to write text or json to STDOUT")
 parser.add_argument("--tags", default=None, help='plaintext file of allowed tags with one tag per line')
 parser.add_argument("--token", default=None, help='the token.tok file downloaded from the GPAS user portal')
-parser.add_argument("--environment", default='development', help='which GPAS environment to use: dev, staging or prod')
+parser.add_argument("--environment", default='dev', help='which GPAS environment to use: dev, staging or prod')
 subparsers = parser.add_subparsers(dest="command")
 
 validate_args = subparsers.add_parser(
