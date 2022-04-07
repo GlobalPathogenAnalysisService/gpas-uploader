@@ -177,7 +177,7 @@ Then follow the same instructions for `samtools` and `read-it-and-keep` before r
 
 ```
 (env) $ pip install pyinstaller
-(env) $ python3 -m PyInstaller distribute.spec
+(env) $ python3 -m PyInstaller -F bin/gpas-upload
 ```
 
 The result will be a single binary as below. `ReadItAndKeep` requires the reference genome file as an input; we've been unable to get this working with `--add-data` and `importlib.resources.path` so for the time being you will need to copy this file alongside the binary as below. If you do not then `ReadItAndKeep` will fail and hence the `decontaminate` step will not work.
