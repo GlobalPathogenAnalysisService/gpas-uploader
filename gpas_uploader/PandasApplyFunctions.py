@@ -6,6 +6,8 @@ import requests
 
 import pandas
 
+import gpas_uploader
+
 def hash_paired_reads(row, wd):
     """Calculate the MD5 and SHA hashes for two FASTQ files containing paired reads.
 
@@ -160,6 +162,10 @@ def rename_unpaired_fastq(row):
     dest_file = Path(row.gpas_sample_name + '.reads.fastq.gz')
     p.rename(p.parent / dest_file)
 
+    # PWF Sprint 11 hack to push JSON decontamination block later to help EC
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p.name)}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p.name), "cleaned": str(p.parent / dest_file)}, json=True)
+
     return str(p.parent / dest_file)
 
 def rename_paired_fastq(row):
@@ -178,6 +184,12 @@ def rename_paired_fastq(row):
     dest_file2 = Path(row.gpas_sample_name + '.reads_2.fastq.gz')
     p1.rename(p1.parent / dest_file1)
     p2.rename(p2.parent / dest_file2)
+
+    # PWF Sprint 11 hack to push JSON decontamination block later to help EC
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p1.name)}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p2.name)}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p1.name), "cleaned": str(p1.parent / dest_file1)}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p2.name), "cleaned": str(p2.parent / dest_file2)}, json=True)
 
     return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
 
