@@ -163,8 +163,9 @@ def rename_unpaired_fastq(row):
     p.rename(p.parent / dest_file)
 
     # PWF Sprint 11 hack to push JSON decontamination block later to help EC
-    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p.name)}, json=True)
-    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p.name), "cleaned": str(p.parent / dest_file)}, json=True)
+    fastq = row.fastq
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": fastq}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": fastq, "cleaned": str(p.parent / dest_file)}, json=True)
 
     return str(p.parent / dest_file)
 
@@ -186,10 +187,11 @@ def rename_paired_fastq(row):
     p2.rename(p2.parent / dest_file2)
 
     # PWF Sprint 11 hack to push JSON decontamination block later to help EC
-    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p1.name)}, json=True)
-    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": str(p2.name)}, json=True)
-    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p1.name), "cleaned": str(p1.parent / dest_file1)}, json=True)
-    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": str(p2.name), "cleaned": str(p2.parent / dest_file2)}, json=True)
+    fastq1, fastq2 = row.fastq1, row.fastq2
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": fastq1}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "started", msg={"file": fastq2}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": fastq1, "cleaned": str(p1.parent / dest_file1)}, json=True)
+    gpas_uploader.dmsg(row.gpas_sample_name, "completed", msg={"file": fastq2, "cleaned": str(p2.parent / dest_file2)}, json=True)
 
     return pandas.Series([str(p1.parent / dest_file1), str(p2.parent / dest_file2),])
 

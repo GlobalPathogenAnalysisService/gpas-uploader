@@ -14,5 +14,5 @@ from .Misc import *
 Use of semantic versioning, MAJOR.MINOR.MAINTAINANCE where
 MAJOR is not backwards compatible, but MINOR and MAINTAINANCE are
 '''
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __author__ = 'Jeff Knaggs, Bede Constantinides, Zam Iqbal and Philip W Fowler'
