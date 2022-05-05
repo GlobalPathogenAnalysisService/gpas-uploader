@@ -65,15 +65,12 @@ class DownloadBatch:
           * Unhandled error logged for support
         """
         url = self.environment_urls[self.enviroment]['WORLD_URL'] + self.environment_urls[self.enviroment]['API_PATH']
-        # url = 'https://portal.dev.gpas.ox.ac.uk/ords/gpasdevpdb1/gpas_pub/gpasapi'
-
         url += '/get_sample_detail/'
-
         self.df['status'] = self.df.apply(self._get_sample_status, args=(url,), axis=1)
+        return self.df.rename(columns={'gpas_sample_name': 'sample'})[['sample', 'status']].to_dict('records')
 
 
     def _get_sample_status(self, row, url):
-
         url += row.gpas_sample_name
         response = requests.get(url=url, headers=self.headers)
         if response.ok:
@@ -119,7 +116,7 @@ class DownloadBatch:
         output_dir = pathlib.Path(outdir)
 
         if not self.output_json:
-            tqdm.pandas(desc='downloading '+filetype)
+            tqdm.pandas(desc='Downloading '+filetype)
 
             self.df[filetype+'_downloaded'] = self.df.progress_apply(self._download_file, args=(url, filetype, output_dir, rename), axis=1)
         else:
