@@ -96,8 +96,8 @@ def convert_bam_paired_reads(row, wd):
             wd / Path(stem+"_2.fastq.gz"),
         ],
         stdin = process1.stdout,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE
+        stdout = subprocess.DEVNULL,
+        stderr = subprocess.DEVNULL
     )
 
     # to stop a race condition
@@ -137,8 +137,8 @@ def convert_bam_unpaired_reads(row, wd):
             wd / Path(stem + '.fastq.gz'),
             wd / Path(row['bam'])
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     # wait for it to finish otherwise the file will not be present
