@@ -44,7 +44,11 @@ class UploadBatch:
     """
     def __init__(self, upload_csv, token_file=None, environment='prod', run_parallel=False, tags_file=None, output_json=False, reference_genome=None):
 
-        assert re.match("^[A-Za-z0-9-_/.]+$", str(upload_csv)), "filename can only contain characters A-Za-z0-9-_."
+        # In the following code it needs to use double-escaped back slash (\\\\) to obtain single-escaped
+        # back slash (\\) at runtime inside the regular expression, so the regular expression matches
+        # Windows-like paths correctly. At the same time string representation of upload_csv needs to replace
+        # its back slashes with escaped back slashes, which on code level looks as replacent of \\ with \\\\.
+        assert re.match("^[A-Za-z0-9-_/.:\\\\]+$", str(upload_csv).replace("\\", "\\\\")), "filename can only contain characters A-Za-z0-9-_./:\\"
 
         # instance variables
         self.upload_csv = Path(upload_csv)
