@@ -373,15 +373,36 @@ class UploadBatch:
         user_organisation: str
         permitted_tags: list
         """
+        http_errors_messages = {  # Custom messages for specific error codes
+	        401: "Authorisation failed, check access token validity",
+        }
+        
         # build the API URL
         url  = self.environment_urls[self.environment]['WORLD_URL'] + self.environment_urls[self.environment]['ORDS_PATH'] + '/userOrgDtls'
 
         # make the API call
         a = requests.get(url=url, headers=self.headers)
 
-        # if it fails raise an Exception, otherwise parse the returned content
+        # Catch http errors, else raise an exception, else parse
         if not a.ok:
-            a.raise_for_status()
+            try:
+                a.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                if self.output_json:
+                    if http_errors_messages.get(a.status_code):
+                        message = http_errors_messages.get(a.status_code)
+                    else:
+                        message = str(e)
+                    msg = {
+                        'http_error': {
+                            'status_code': a.status_code,
+                            'message': message
+                        }
+                    }
+                    print(json.dumps(msg))
+                    sys.exit(1)
+                else:
+                    raise e
         else:
             result = json.loads(a.content)
 
