@@ -294,11 +294,11 @@ def check_tags(row, allowed_tags):
         True if all match, otherwise False
     """
     tags_ok = True
-    if numpy.isnan(row['tags']):
-        return(False)
-    else:
+    if row['tags'] is not None and isinstance(row['tags'], str):
         cols = row['tags'].split(':')
         for i in cols:
             if i not in allowed_tags:
                 tags_ok = False
         return(tags_ok)
+    else:
+        return(False)
