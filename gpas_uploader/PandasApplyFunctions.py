@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 
 import pandas
+import numpy
 
 import gpas_uploader
 
@@ -293,8 +294,11 @@ def check_tags(row, allowed_tags):
         True if all match, otherwise False
     """
     tags_ok = True
-    cols = row['tags'].split(':')
-    for i in cols:
-        if i not in allowed_tags:
-            tags_ok = False
-    return(tags_ok)
+    if numpy.isnan(row['tags']):
+        return(False)
+    else:
+        cols = row['tags'].split(':')
+        for i in cols:
+            if i not in allowed_tags:
+                tags_ok = False
+        return(tags_ok)
