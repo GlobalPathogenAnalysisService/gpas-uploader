@@ -819,6 +819,34 @@ def test_illumina_fastq_fail_13():
     }
 
 
+# check an upload CSV where two fastq files exist but use disallowed characters
+def test_illumina_fastq_fail_14():
+
+    a = gpas_uploader.UploadBatch('tests/files/illumina-fastq-upload-csv-fail-14.csv', output_json=True)
+
+    assert a.instantiated
+
+    a.validate()
+
+    assert not a.valid
+
+    assert a.validation_json == {
+      "validation": {
+        "status": "failure",
+        "samples": [
+          {
+            "sample": "sample1",
+            "error": "tags are duplicated"
+          },
+          {
+            "sample": "sample3",
+            "error": "tags are duplicated"
+          }
+        ]
+      }
+    }
+
+
 
 def test_nanopore_bam_decontaminate_pass_1():
 

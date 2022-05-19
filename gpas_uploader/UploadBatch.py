@@ -134,6 +134,16 @@ class UploadBatch:
 
             self.df.reset_index(inplace=True)
 
+            # check tags are not duplicated
+            a = copy.deepcopy(self.df)
+            a['tags_not_duplicated'] = a.apply(gpas_uploader.check_tags_not_duplicated, axis=1)
+            a = a[~a['tags_not_duplicated']]
+            if len(a) > 0:
+                a['error_message'] = 'tags are duplicated'
+                a.reset_index(inplace=True)
+                a = a[['sample_name', 'error_message']]
+                self.validation_errors = pandas.concat([self.validation_errors,a])
+
             # check tags are ok
             if self.permitted_tags is not None:
                 a = copy.deepcopy(self.df)

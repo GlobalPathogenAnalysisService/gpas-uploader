@@ -283,6 +283,16 @@ def check_files_exist_in_df(df, file_extension, wd):
         err.rename(columns={'name': 'sample_name'}, inplace=True)
         return(False, err)
 
+def check_tags_not_duplicated(row):
+
+    tags_not_duplicated = True
+    if row['tags'] is not None and isinstance(row['tags'], str):
+        cols = row['tags'].split(':')
+        if len(set(cols)) != len(cols):
+            tags_not_duplicated = False
+    return (tags_not_duplicated)
+
+
 def check_tags(row, allowed_tags):
     """Check that the tags all match a supplied set of allowed tags.
 
@@ -295,7 +305,7 @@ def check_tags(row, allowed_tags):
     """
     tags_ok = True
     if row['tags'] is not None and isinstance(row['tags'], str):
-        cols = row['tags'].split(':')
+        cols = row['tags'].split(':')        
         for i in cols:
             if i not in allowed_tags:
                 tags_ok = False
