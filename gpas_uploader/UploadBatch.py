@@ -119,7 +119,9 @@ class UploadBatch:
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'no sample_name column in upload CSV']], columns=['sample_name', 'error_message'])])
 
         elif any(self.df.sample_name.isna()):
-            self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'sample_name cannot be empty']], columns=['sample_name', 'error_message'])])
+            for na in self.df.sample_name.isna():
+                if na:
+                    self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'sample_name cannot be empty']], columns=['sample_name', 'error_message'])])
 
         elif len(self.df.sample_name.unique()) != len(self.df.sample_name):
             self.validation_errors = pandas.concat([self.validation_errors, pandas.DataFrame([[None, 'sample_name must be unique']], columns=['sample_name', 'error_message'])])
