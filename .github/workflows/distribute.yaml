@@ -24,7 +24,7 @@ jobs:
         python3 -m pip install --upgrade pip
         pip3 install pandas pandarallel pycountry pytest requests typing_inspect wrapt pydantic tqdm
         pip3 install --no-deps pandera
-        pip3 install pyinstaller
+        pip3 install pyinstaller pytest-cov
 
     - name: Install samtools
       run: |
