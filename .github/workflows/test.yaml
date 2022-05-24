@@ -2,24 +2,33 @@ name: Tests
 on: [push]
 
 jobs:
+  
   build:
+    
     name: Run Python Tests
+    
     runs-on: ${{ matrix.os }}
+    
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ['3.10']
+    
     steps:
+
     - uses: actions/checkout@v2
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v2
       with:
         python-version: '3.10'
+
     - name: Install Python dependencies
       run: |
         python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt pyinstaller
+
     - name: Install samtools
       run: |
          wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
@@ -30,6 +39,7 @@ jobs:
          make
          cp samtools ..
          cd ..
+
     - name: Install readItAndKeep
       run: |
         git clone https://github.com/GenomePathogenAnalysisService/read-it-and-keep.git
@@ -38,6 +48,7 @@ jobs:
         mv readItAndKeep ../..
         cd ../..
         rm -r read-it-and-keep
+
     - name: Test with pytest
       run: |
         pytest --exitfirst --verbose --failed-first \
