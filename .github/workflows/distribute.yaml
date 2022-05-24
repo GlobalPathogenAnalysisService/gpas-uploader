@@ -9,7 +9,7 @@ jobs:
         fail-fast: false
         matrix:
             os: [macos-latest, ubuntu-20.04]
-
+            python-version: ['3.10']
     steps:
 
     - uses: actions/checkout@v2
@@ -64,8 +64,8 @@ jobs:
         cd dist/
         ./gpas-upload --json decontaminate ../examples/illumina-bam-upload.csv
 
-    # - name: Store dist
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: gpas-upload-${{ matrix.os }}
-    #     path: dist/*
+    - name: Store dist
+      uses: actions/upload-artifact@v2
+      with:
+        name: gpas-upload-${{ matrix.os }}
+        path: dist/*
