@@ -43,6 +43,13 @@ def parse_access_token(token_file):
             "ORDS_PATH": "/ords/gpasuat/grep/electron",
             "DASHBOARD_PATH": "/ords/gpas/r/gpas-portal/lineages-voc",
             "ENV_NAME": "STAGE"
+        },
+        "atp-test": {
+            "WORLD_URL": "https://admin-adb.dev.gpas.ox.ac.uk",
+            "API_PATH": "/ords/gpas_pub/gpasapi",
+            "ORDS_PATH": "/ords/grep/electron",
+            "DASHBOARD_PATH": ":9000/ords/r/gpas/gpas-portal/lineages-voc",
+            "ENV_NAME": "ATP-TEST"
         }
     }
     return(access_token, headers, environment_urls)
