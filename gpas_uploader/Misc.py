@@ -46,8 +46,8 @@ def parse_access_token(token_file):
         },
         "atp-test": {
             "WORLD_URL": "https://admin-adb.dev.gpas.ox.ac.uk",
-            "API_PATH": "/ords/gpas_pub/gpasapi",
-            "ORDS_PATH": "/ords/grep/electron",
+            "API_PATH": ":9000/ords/gpas_pub/gpasapi",
+            "ORDS_PATH": ":9000/ords/grep/electron",
             "DASHBOARD_PATH": ":9000/ords/r/gpas/gpas-portal/lineages-voc",
             "ENV_NAME": "ATP-TEST"
         }
