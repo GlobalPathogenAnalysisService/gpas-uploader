@@ -56,7 +56,7 @@ class UploadBatch:
         self.output_json = output_json
         self.reference_genome = reference_genome
 
-        assert environment in ['dev', 'prod', 'staging']
+        assert environment in ['dev', 'prod', 'staging', 'atp-test']
         self.environment = environment
 
         if not self.upload_csv.is_file():
